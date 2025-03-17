@@ -1,0 +1,56 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block cart_content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="box-element">
+            <a class="btn btn-outline-dark" href="{% url 'home' %}">&#x2190; Continue Shopping</a>
+            <br><br>
+            <table class="table">
+                <tr>
+                    <th><h5>Items: <strong>{{ cart|length }}</strong></h5></th>
+                    <th><h5>Total:<strong> ${{ total }}</strong></h5></th>
+                    <th>
+                        <a style="float:right; margin:5px;" class="btn btn-success" href="{% url 'checkout' %}">Checkout</a>
+                    </th>
+                </tr>
+            </table>
+        </div>
+
+        <br>
+        <div class="box-element">	
+            <div class="cart-row">
+                <div style="flex:2"></div>
+                <div style="flex:2"><strong>Item</strong></div>
+                <div style="flex:1"><strong>Price</strong></div>
+                <div style="flex:1"><strong>Quantity</strong></div>
+                <div style="flex:1"><strong>Total</strong></div>
+            </div>
+
+            {% for item in cart %}
+            <div class="cart-row">
+                <div style="flex:2">
+                    <img class="row-image" src="{{ item.product.product_picture }}" height="100" width="200">
+                </div>
+                <div style="flex:2"><p>{{ item.product.product_name }}</p></div>
+                <div style="flex:1"><p>${{ item.product.current_price }}</p></div>
+                <div style="flex:1">
+                    <p class="quantity">{{ item.quantity }}</p>
+                    <div class="quantity">
+                        <a href="#" class="chg-quantity plus-cart" pid="{{ item.id }}">
+                            <img src="{% static 'app/images/arrow-up.png' %}" height="20" width="20">
+                        </a>
+                        <a href="#" class="chg-quantity minus-cart" pid="{{ item.id }}">
+                            <img src="{% static 'app/images/arrow-down.png' %}" height="20" width="20">
+                        </a>
+                    </div>
+                </div>
+                <div style="flex:1"><p>${{ item.total_price }}</p></div>
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+</div>
+{% endblock cart_content %}
