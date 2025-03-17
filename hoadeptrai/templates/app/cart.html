@@ -2,54 +2,95 @@
 {% load static %}
 
 {% block cart_content %}
-<div class="row">
-    <div class="col-lg-12">
-        <div class="box-element">
-            <a class="btn btn-outline-dark" href="{% url 'home' %}">&#x2190; Continue Shopping</a>
-            <br><br>
-            <table class="table">
-                <tr>
-                    <th><h5>Items: <strong>{{ cart|length }}</strong></h5></th>
-                    <th><h5>Total:<strong> ${{ total }}</strong></h5></th>
-                    <th>
-                        <a style="float:right; margin:5px;" class="btn btn-success" href="{% url 'checkout' %}">Checkout</a>
-                    </th>
-                </tr>
-            </table>
-        </div>
-            
-        <br>
-        <div class="box-element">	
-            <div class="cart-row">
-                <div style="flex:2"></div>
-                <div style="flex:2"><strong>Item</strong></div>
-                <div style="flex:1"><strong>Price</strong></div>
-                <div style="flex:1"><strong>Quantity</strong></div>
-                <div style="flex:1"><strong>Total</strong></div>
-            </div>
-
-            {% for item in cart %}
-            <div class="cart-row">
-                <div style="flex:2">
-                    <img class="row-image" src="{{ item.product.product_picture }}" height="100" width="200">
-                </div>
-                <div style="flex:2"><p>{{ item.product.product_name }}</p></div>
-                <div style="flex:1"><p>${{ item.product.current_price }}</p></div>
-                <div style="flex:1">
-                    <p class="quantity">{{ item.quantity }}</p>
-                    <div class="quantity">
-                        <a href="#" class="chg-quantity plus-cart" pid="{{ item.id }}">
-                            <img src="{% static 'app/images/arrow-up.png' %}" height="20" width="20">
-                        </a>
-                        <a href="#" class="chg-quantity minus-cart" pid="{{ item.id }}">
-                            <img src="{% static 'app/images/arrow-down.png' %}" height="20" width="20">
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Giỏ hàng của bạn</h4>
+                        <a class="btn btn-outline-primary" href="{% url 'home' %}">
+                            <i class="fas fa-arrow-left"></i> Tiếp tục mua sắm
                         </a>
                     </div>
                 </div>
-                <div style="flex:1"><p>${{ item.total_price }}</p></div>
-            </div>
-            {% endfor %}
+                
+                <div class="card-body">
+                    {% if cart %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col" width="100">Hình ảnh</th>
+                                        <th scope="col">Sản phẩm</th>
+                                        <th scope="col" width="150">Giá</th>
+                                        <th scope="col" width="150">Số lượng</th>
+                                        <th scope="col" width="150">Tổng</th>
+                                        <th scope="col" width="100"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in cart %}
+                                    <tr>
+                                        <td>
+                                            <img src="{{ item.product.image_url }}" class="img-thumbnail" alt="{{ item.product.name }}" style="max-width: 80px;">
+                                        </td>
+                                        <td>
+                                            <h6 class="mb-0">{{ item.product.name }}</h6>
+                                            <small class="text-muted">{{ item.product.category }}</small>
+                                        </td>
+                                        <td>{{ item.product.price }}đ</td>
+                                        <td>
+                                            <div class="input-group input-group-sm" style="width: 100px;">
+                                                <button class="btn btn-outline-secondary update-cart" type="button" data-action="remove" data-product="{{ item.product.id }}">-</button>
+                                                <input type="text" class="form-control text-center" value="{{ item.quantity }}" readonly>
+                                                <button class="btn btn-outline-secondary update-cart" type="button" data-action="add" data-product="{{ item.product.id }}">+</button>
+                                            </div>
+                                        </td>
+                                        <td>{{ item.total_price }}đ</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-danger remove-item" data-product="{{ item.product.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
 
+                        <div class="card mt-3">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" placeholder="Mã giảm giá">
+                                            <button class="btn btn-outline-secondary" type="button">Áp dụng</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="text-end">
+                                            <p class="mb-2">Tạm tính: <strong>{{ subtotal }}đ</strong></p>
+                                            <p class="mb-2">Giảm giá: <strong>0đ</strong></p>
+                                            <h4 class="mb-0">Tổng cộng: <strong>{{ total }}đ</strong></h4>
+                                            <a href="{% url 'checkout' %}" class="btn btn-primary mt-3">
+                                                Thanh toán <i class="fas fa-arrow-right ms-2"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+                            <h4>Giỏ hàng của bạn đang trống</h4>
+                            <p class="text-muted">Hãy thêm sản phẩm vào giỏ hàng</p>
+                            <a href="{% url 'home' %}" class="btn btn-primary">Tiếp tục mua sắm</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
