@@ -10,102 +10,31 @@
 {% endblock slider %}
 
 {% block main_content %}
-<div class="container mt-5">
-    <h2 class="text-center mb-4">Sản Phẩm</h2>
+<div class="container mt-4">
     <div class="row">
-        <div class="col-lg-3">
-            <img class="thumbnail" src="{% static 'app/images/product1.jpg'%}"> 
-            <div class="box-element product">
-                <h6><strong>Sản phẩm</strong></h6>
-                <hr>
-                <button class="btn btn-outline-secondary">Thêm vào giỏ</button>
-                <a class="btn btn-outline-success" href="#">Xem</a>
-                <h4 style="display:inline-block; float:right"><strong>20.000đ</strong></h4>
+        {% for product in Products %}
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                {% if product.image_url %}
+                    <img class="card-img-top" src="{{ product.image_url }}" alt="{{  product.image_url }}">
+                {% else %}
+                    <img class="card-img-top" src="{% static 'app/images/placeholder.png' %}" alt="placeholder">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title"><strong>{{ product.product_name }}</strong></h5>
+                    <p class="card-text">{{ product.description|truncatewords:20 }}</p>
+                    <hr>
+                    <button class="btn btn-outline-secondary add-btn">Thêm vào giỏ</button>
+                    <a class="btn btn-outline-success" href="#">Chi tiết</a>
+                    <h4 class="mt-2 text-end"><strong>{{ product.price }}</strong></h4>
+                </div>
             </div>
         </div>
-
-        <div class="col-lg-3">
-            <img class="thumbnail" src="{% static 'app/images/product1.jpg'%}"> 
-            <div class="box-element product">
-                <h6><strong>Sản phẩm</strong></h6>
-                <hr>
-                <button class="btn btn-outline-secondary">Thêm vào giỏ</button>
-                <a class="btn btn-outline-success" href="#">Xem</a>
-                <h4 style="display:inline-block; float:right"><strong>20.000đ</strong></h4>
-            </div>
+        {% empty %}
+        <div class="col-12 text-center">
+            <p>Không có sản phẩm nào.</p>
         </div>
-
-        <div class="col-lg-3">
-            <img class="thumbnail" src="{% static 'app/images/product1.jpg'%}"> 
-            <div class="box-element product">
-                <h6><strong>Sản phẩm</strong></h6>
-                <hr>
-                <button class="btn btn-outline-secondary">Thêm vào giỏ</button>
-                <a class="btn btn-outline-success" href="#">Xem</a>
-                <h4 style="display:inline-block; float:right"><strong>20.000đ</strong></h4>
-            </div>
-        </div>
-
-        <div class="col-lg-3">
-            <img class="thumbnail" src="{% static 'app/images/product1.jpg'%}"> 
-            <div class="box-element product">
-                <h6><strong>Sản phẩm</strong></h6>
-                <hr>
-                <button class="btn btn-outline-secondary">Thêm vào giỏ</button>
-                <a class="btn btn-outline-success" href="#">Xem</a>
-                <h4 style="display:inline-block; float:right"><strong>20.000đ</strong></h4>
-            </div>
-        </div>
+        {% endfor %}
     </div>
-
-    <!-- Categories Section -->
-    <section class="mt-5 mb-5">
-        <h2 class="text-center mb-4">Danh Mục Sản Phẩm</h2>
-        <div class="row">
-            <div class="col-md-3 mb-4">
-                <div class="card h-100">
-                    <img src="{% static 'app/images/category1.jpg'%}" class="card-img-top" alt="Category 1">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Thể Loại 1</h5>
-                        <p class="card-text">Các sản phẩm thuộc thể loại 1</p>
-                        <a href="#" class="btn btn-primary">Xem thêm</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-4">
-                <div class="card h-100">
-                    <img src="{% static 'app/images/category2.jpg'%}" class="card-img-top" alt="Category 2">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Thể Loại 2</h5>
-                        <p class="card-text">Các sản phẩm thuộc thể loại 2</p>
-                        <a href="#" class="btn btn-primary">Xem thêm</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-4">
-                <div class="card h-100">
-                    <img src="{% static 'app/images/category3.jpg'%}" class="card-img-top" alt="Category 3">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Thể Loại 3</h5>
-                        <p class="card-text">Các sản phẩm thuộc thể loại 3</p>
-                        <a href="#" class="btn btn-primary">Xem thêm</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-4">
-                <div class="card h-100">
-                    <img src="{% static 'app/images/category4.jpg'%}" class="card-img-top" alt="Category 4">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Thể Loại 4</h5>
-                        <p class="card-text">Các sản phẩm thuộc thể loại 4</p>
-                        <a href="#" class="btn btn-primary">Xem thêm</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 </div>
 {% endblock main_content %}

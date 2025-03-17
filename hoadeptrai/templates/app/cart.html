@@ -16,7 +16,7 @@
                 </div>
                 
                 <div class="card-body">
-                    {% if cart %}
+                    {% if items %}
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead class="table-light">
@@ -30,13 +30,13 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for item in cart %}
+                                    {% for item in items %}
                                     <tr>
                                         <td>
-                                            <img src="{{ item.product.image_url }}" class="img-thumbnail" alt="{{ item.product.name }}" style="max-width: 80px;">
+                                            <img src="{{ item.product.image_url }}" class="img-thumbnail" alt="{{ item.product.product_name }}" style="max-width: 80px;">
                                         </td>
                                         <td>
-                                            <h6 class="mb-0">{{ item.product.name }}</h6>
+                                            <h6 class="mb-0">{{ item.product.product_name }}</h6>
                                             <small class="text-muted">{{ item.product.category }}</small>
                                         </td>
                                         <td>{{ item.product.price }}đ</td>
@@ -47,7 +47,7 @@
                                                 <button class="btn btn-outline-secondary update-cart" type="button" data-action="add" data-product="{{ item.product.id }}">+</button>
                                             </div>
                                         </td>
-                                        <td>{{ item.total_price }}đ</td>
+                                        <td>{{ item.get_total }}đ</td>
                                         <td>
                                             <button class="btn btn-sm btn-outline-danger remove-item" data-product="{{ item.product.id }}">
                                                 <i class="fas fa-trash"></i>
@@ -70,9 +70,9 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="text-end">
-                                            <p class="mb-2">Tạm tính: <strong>{{ subtotal }}đ</strong></p>
+                                            <p class="mb-2">Tạm tính: <strong>{{ order.get_cart_total }}đ</strong></p>
                                             <p class="mb-2">Giảm giá: <strong>0đ</strong></p>
-                                            <h4 class="mb-0">Tổng cộng: <strong>{{ total }}đ</strong></h4>
+                                            <h4 class="mb-0">Tổng cộng: <strong>{{ order.get_cart_total }}đ</strong></h4>
                                             <a href="{% url 'checkout' %}" class="btn btn-primary mt-3">
                                                 Thanh toán <i class="fas fa-arrow-right ms-2"></i>
                                             </a>
