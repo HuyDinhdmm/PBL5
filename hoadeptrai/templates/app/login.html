@@ -218,7 +218,8 @@
         <div class="left-panel">
             <h1>Hungry for More?</h1>
             <p>Don't have an account yet?</p>
-            <button class="register-btn" onclick="window.location.href='register.html'">Register</button>
+            <a href="{% url 'register' %}" class="register-btn" style="text-decoration: none; color: white;">Register</a>
+            <a href="{% url 'home' %}" class="register-btn" style="text-decoration: none; color: white; margin-top: 10px;">Home</a>
         </div>
         <div class="right-panel">
             <h2>Welcome Back!</h2>

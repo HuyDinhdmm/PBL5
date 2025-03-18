@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block cart_content %}
-<div class="container my-5">
+<div class="container my-5" style="margin-bottom: 100px !important;">
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow">
@@ -18,38 +18,58 @@
                 <div class="card-body">
                     {% if items %}
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th scope="col" width="100">Hình ảnh</th>
                                         <th scope="col">Sản phẩm</th>
-                                        <th scope="col" width="150">Giá</th>
-                                        <th scope="col" width="150">Số lượng</th>
-                                        <th scope="col" width="150">Tổng</th>
-                                        <th scope="col" width="100"></th>
+                                        <th scope="col" width="150" class="text-center">Đơn giá</th>
+                                        <th scope="col" width="200" class="text-center">Số lượng</th>
+                                        <th scope="col" width="150" class="text-center">Thành tiền</th>
+                                        <th scope="col" width="50"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for item in items %}
                                     <tr>
                                         <td>
-                                            <img src="{{ item.product.image_url }}" class="img-thumbnail" alt="{{ item.product.product_name }}" style="max-width: 80px;">
-                                        </td>
-                                        <td>
-                                            <h6 class="mb-0">{{ item.product.product_name }}</h6>
-                                            <small class="text-muted">{{ item.product.category }}</small>
-                                        </td>
-                                        <td>{{ item.product.price }}đ</td>
-                                        <td>
-                                            <div class="input-group input-group-sm" style="width: 100px;">
-                                                <button class="btn btn-outline-secondary update-cart" type="button" data-action="remove" data-product="{{ item.product.id }}">-</button>
-                                                <input type="text" class="form-control text-center" value="{{ item.quantity }}" readonly>
-                                                <button class="btn btn-outline-secondary update-cart" type="button" data-action="add" data-product="{{ item.product.id }}">+</button>
+                                            <div class="d-flex align-items-center">
+                                                <img src="{{ item.product.image_url|default:'/static/app/images/placeholder.png' }}" 
+                                                     class="rounded me-3" 
+                                                     style="width: 80px; height: 80px; object-fit: cover;" 
+                                                     alt="{{ item.product.product_name }}">
+                                                <div>
+                                                    <h6 class="mb-1">{{ item.product.product_name }}</h6>
+                                                    <small class="text-muted">{{ item.product.category.category_name }}</small>
+                                                </div>
                                             </div>
                                         </td>
-                                        <td>{{ item.get_total }}đ</td>
+                                        <td class="text-center">{{ item.product.price }}đ</td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-danger remove-item" data-product="{{ item.product.id }}">
+                                            <div class="d-flex justify-content-center align-items-center">
+                                                <button class="btn btn-outline-secondary update-cart" 
+                                                        type="button" 
+                                                        data-action="remove" 
+                                                        data-product="{{ item.product.id }}">
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                                <input type="text" 
+                                                       class="form-control text-center mx-2" 
+                                                       style="width: 60px;" 
+                                                       value="{{ item.quantity }}" 
+                                                       readonly>
+                                                <button class="btn btn-outline-secondary update-cart" 
+                                                        type="button" 
+                                                        data-action="add" 
+                                                        data-product="{{ item.product.id }}">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">{{ item.get_total }}đ</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-danger remove-item" 
+                                                    data-product="{{ item.product.id }}"
+                                                    title="Xóa sản phẩm">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
@@ -59,21 +79,31 @@
                             </table>
                         </div>
 
-                        <div class="card mt-3">
+                        <div class="card mt-4">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="input-group">
-                                            <input type="text" class="form-control" placeholder="Mã giảm giá">
-                                            <button class="btn btn-outline-secondary" type="button">Áp dụng</button>
+                                            <input type="text" class="form-control" placeholder="Nhập mã giảm giá">
+                                            <button class="btn btn-outline-primary" type="button">Áp dụng</button>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="text-end">
-                                            <p class="mb-2">Tạm tính: <strong>{{ order.get_cart_total }}đ</strong></p>
-                                            <p class="mb-2">Giảm giá: <strong>0đ</strong></p>
-                                            <h4 class="mb-0">Tổng cộng: <strong>{{ order.get_cart_total }}đ</strong></h4>
-                                            <a href="{% url 'checkout' %}" class="btn btn-primary mt-3">
+                                            <div class="mb-2">
+                                                <span>Tạm tính:</span>
+                                                <span class="h5 ms-2">{{ order.get_cart_total }}đ</span>
+                                            </div>
+                                            <div class="mb-2">
+                                                <span>Giảm giá:</span>
+                                                <span class="h5 ms-2 text-danger">0đ</span>
+                                            </div>
+                                            <hr>
+                                            <div class="mb-3">
+                                                <span>Tổng cộng:</span>
+                                                <span class="h4 ms-2 text-primary">{{ order.get_cart_total }}đ</span>
+                                            </div>
+                                            <a href="{% url 'checkout' %}" class="btn btn-primary btn-lg">
                                                 Thanh toán <i class="fas fa-arrow-right ms-2"></i>
                                             </a>
                                         </div>
@@ -85,8 +115,10 @@
                         <div class="text-center py-5">
                             <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
                             <h4>Giỏ hàng của bạn đang trống</h4>
-                            <p class="text-muted">Hãy thêm sản phẩm vào giỏ hàng</p>
-                            <a href="{% url 'home' %}" class="btn btn-primary">Tiếp tục mua sắm</a>
+                            <p class="text-muted mb-4">Hãy thêm sản phẩm vào giỏ hàng</p>
+                            <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                                Tiếp tục mua sắm
+                            </a>
                         </div>
                     {% endif %}
                 </div>

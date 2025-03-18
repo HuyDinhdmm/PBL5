@@ -102,6 +102,10 @@ class OrderItem(models.Model):
     def subtotal(self):
         return self.quantity * self.price
 
+    @property
+    def get_total(self):
+        return self.quantity * self.price
+
 # Message Model
 class Message(models.Model):
     sender = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sent_messages')
