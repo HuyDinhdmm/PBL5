@@ -1,0 +1,35 @@
+{% if orders %}
+<div class="table-responsive">
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.order_date|date:"d/m/Y" }}</td>
+                <td>{{ order.total_amount }}đ</td>
+                <td>
+                    <span class="badge {% if order.status == 'pending' %}bg-warning
+                                     {% elif order.status == 'delivered' %}bg-success
+                                     {% elif order.status == 'cancelled' %}bg-danger
+                                     {% else %}bg-primary{% endif %}">
+                        {{ order.status }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center text-muted">
+    <p>No order history found</p>
+</div>
+{% endif %}

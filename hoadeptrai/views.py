@@ -7,6 +7,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Sum, Count
 from django.utils import timezone
 from datetime import timedelta
+from django.template.loader import render_to_string
 
 def register(request):
     if request.method == 'POST':
@@ -81,24 +82,38 @@ def cart(request):
     return render(request, 'app/cart.html', context)
 
 def checkout(request):
-    if request.user.is_authenticated:
-        customer = Customer.objects.get(id=request.user.id)
-        order, created = Order.objects.get_or_create(
-            customer=customer,
-            status='pending',
-            defaults={
-                'total_amount': 0,
-                'shipping_address': customer.address or ''
-            }
-        )
-        items = order.orderitem_set.all()
-    else:
-        items = []
-        order = {'get_cart_total': 0, 'get_cart_items': 0}
-    
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    customer = Customer.objects.get(id=request.user.id)
+    order, created = Order.objects.get_or_create(
+        customer=customer,
+        status='pending',
+        defaults={
+            'total_amount': 0,
+            'shipping_address': customer.address or ''
+        }
+    )
+
+    if request.method == 'POST':
+        shipping_address = request.POST.get('shipping_address')
+        payment_method = request.POST.get('payment_method')
+        
+        if order.orderitem_set.exists():
+            order.shipping_address = shipping_address
+            order.payment_method = payment_method
+            order.status = 'processing'
+            order.save()
+            
+            messages.success(request, 'Order placed successfully!')
+            return redirect('home')
+        else:
+            messages.error(request, 'Your cart is empty!')
+
     context = {
-        'items': items,
-        'order': order
+        'order': order,
+        'items': order.orderitem_set.all(),
+        'shipping_address': customer.address,
     }
     return render(request, 'app/checkout.html', context)
 
@@ -192,7 +207,8 @@ def product_detail(request, product_id):
 def search_products(request):
     query = request.GET.get('q', '')
     if query:
-        products = Product.objects.filter(product_name__icontains(query))
+        # Fix: Changed from product_name__icontains(query) to product_name__icontains=query
+        products = Product.objects.filter(product_name__icontains=query)
     else:
         products = Product.objects.none()
     
@@ -284,16 +300,29 @@ def admin_orders(request):
     return render(request, 'admin/orders.html', {'orders': orders})
 
 @staff_member_required
+def delete_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    order.delete()
+    messages.success(request, 'Order deleted successfully')
+    return redirect('admin_orders')
+
+@staff_member_required
 def admin_customers(request):
     if request.method == 'POST':
         action = request.POST.get('action')
         customer_id = request.POST.get('customer_id')
         
         if action == 'toggle_status':
-            customer = Customer.objects.get(id=customer_id)
-            customer.is_active = not customer.is_active
-            customer.save()
-            return JsonResponse({'success': True})
+            try:
+                customer = Customer.objects.get(id=customer_id)
+                customer.is_active = not customer.is_active
+                customer.save()
+                messages.success(request, f'Customer status updated successfully')
+                return JsonResponse({'success': True})
+            except Customer.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)}, status=500)
             
     customers = Customer.objects.filter(role='customer').order_by('-date_joined')
     return render(request, 'admin/customers.html', {'customers': customers})

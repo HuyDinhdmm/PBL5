@@ -1,0 +1,93 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Orders Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Orders Management</h1>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Order List</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>#{{ order.id }}</td>
+                            <td>{{ order.customer.username }}</td>
+                            <td>{{ order.total_amount }}đ</td>
+                            <td>
+                                <span class="badge {% if order.status == 'pending' %}bg-warning
+                                                 {% elif order.status == 'processing' %}bg-info
+                                                 {% elif order.status == 'shipped' %}bg-primary
+                                                 {% elif order.status == 'delivered' %}bg-success
+                                                 {% else %}bg-danger{% endif %}">
+                                    {{ order.status }}
+                                </span>
+                            </td>
+                            <td>{{ order.order_date|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-info view-order" data-bs-toggle="modal" data-bs-target="#orderDetailModal" data-order-id="{{ order.id }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-order" data-bs-toggle="modal" data-bs-target="#deleteOrderModal" data-order-id="{{ order.id }}" data-order-number="#{{ order.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Order Modal -->
+<div class="modal fade" id="deleteOrderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete order <span id="deleteOrderNumber"></span>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmDelete" class="btn btn-danger">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('.delete-order').click(function() {
+        var orderId = $(this).data('order-id');
+        var orderNumber = $(this).data('order-number');
+        $('#deleteOrderNumber').text(orderNumber);
+        $('#confirmDelete').attr('href', `/admin-orders/delete/${orderId}/`);
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

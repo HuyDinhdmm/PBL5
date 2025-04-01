@@ -1,0 +1,46 @@
+<div class="list-group">
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+            <strong>Username:</strong>
+            <span>{{ customer.username }}</span>
+        </div>
+    </div>
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+            <strong>Email:</strong>
+            <span>{{ customer.email }}</span>
+        </div>
+    </div>
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+            <strong>Phone:</strong>
+            <span>{{ customer.phone_number|default:"Not provided" }}</span>
+        </div>
+    </div>
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+            <strong>Address:</strong>
+            <span>{{ customer.address|default:"Not provided" }}</span>
+        </div>
+    </div>
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+            <strong>Join Date:</strong>
+            <span>{{ customer.date_joined|date:"d/m/Y" }}</span>
+        </div>
+    </div>
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+            <strong>Status:</strong>
+            <span class="badge {% if customer.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                {{ customer.is_active|yesno:"Active,Inactive" }}
+            </span>
+        </div>
+    </div>
+    <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+            <strong>Loyalty Points:</strong>
+            <span>{{ customer.loyalty_points }}</span>
+        </div>
+    </div>
+</div>
