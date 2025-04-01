@@ -5,59 +5,63 @@
 <div class="container my-5" style="margin-bottom: 100px !important;">
     <div class="row">
         <div class="col-lg-12">
-            <div class="card shadow">
-                <div class="card-header bg-white">
+            <div class="card border-0 rounded-4 shadow">
+                <div class="card-header bg-white border-0 py-4">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">Giỏ hàng của bạn</h4>
-                        <a class="btn btn-outline-primary" href="{% url 'home' %}">
-                            <i class="fas fa-arrow-left"></i> Tiếp tục mua sắm
+                        <h3 class="mb-0 fw-bold text-primary">
+                            <i class="fas fa-shopping-cart me-2"></i>Giỏ hàng của bạn
+                        </h3>
+                        <a class="btn btn-outline-primary rounded-pill px-4" href="{% url 'home' %}">
+                            <i class="fas fa-arrow-left me-2"></i> Tiếp tục mua sắm
                         </a>
                     </div>
                 </div>
                 
-                <div class="card-body">
+                <div class="card-body p-4">
                     {% if items %}
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
-                                <thead class="table-light">
+                                <thead class="table-light text-primary">
                                     <tr>
-                                        <th scope="col">Sản phẩm</th>
+                                        <th scope="col" class="rounded-start">Sản phẩm</th>
                                         <th scope="col" width="150" class="text-center">Đơn giá</th>
                                         <th scope="col" width="200" class="text-center">Số lượng</th>
                                         <th scope="col" width="150" class="text-center">Thành tiền</th>
-                                        <th scope="col" width="50"></th>
+                                        <th scope="col" width="50" class="rounded-end"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for item in items %}
-                                    <tr>
+                                    <tr class="product-row">
                                         <td>
                                             <div class="d-flex align-items-center">
-                                                <img src="{{ item.product.image_url|default:'/static/app/images/placeholder.png' }}" 
-                                                     class="rounded me-3" 
-                                                     style="width: 80px; height: 80px; object-fit: cover;" 
-                                                     alt="{{ item.product.product_name }}">
+                                                <div class="product-img-wrapper rounded-3 overflow-hidden me-3 shadow-sm">
+                                                    <img src="{{ item.product.image_url|default:'/static/app/images/placeholder.png' }}" 
+                                                         class="product-img" 
+                                                         style="width: 90px; height: 90px; object-fit: cover; transition: transform 0.3s;" 
+                                                         alt="{{ item.product.product_name }}">
+                                                </div>
                                                 <div>
-                                                    <h6 class="mb-1">{{ item.product.product_name }}</h6>
-                                                    <small class="text-muted">{{ item.product.category.category_name }}</small>
+                                                    <h6 class="mb-1 fw-bold">{{ item.product.product_name }}</h6>
+                                                    <span class="badge bg-primary rounded-pill">{{ item.product.category.category_name }}</span>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="text-center">{{ item.product.price }}đ</td>
+                                        <td class="text-center fw-bold">{{ item.product.price }}đ</td>
                                         <td>
-                                            <div class="d-flex justify-content-center align-items-center">
-                                                <button class="btn btn-outline-secondary update-cart" 
+                                            <div class="d-flex justify-content-center align-items-center quantity-control">
+                                                <button class="btn btn-outline-primary update-cart rounded-circle" 
                                                         type="button" 
                                                         data-action="remove" 
                                                         data-product="{{ item.product.id }}">
                                                     <i class="fas fa-minus"></i>
                                                 </button>
                                                 <input type="text" 
-                                                       class="form-control text-center mx-2" 
-                                                       style="width: 60px;" 
+                                                       class="form-control text-center mx-2 border-primary" 
+                                                       style="width: 60px; border-radius: 20px;" 
                                                        value="{{ item.quantity }}" 
                                                        readonly>
-                                                <button class="btn btn-outline-secondary update-cart" 
+                                                <button class="btn btn-outline-primary update-cart rounded-circle" 
                                                         type="button" 
                                                         data-action="add" 
                                                         data-product="{{ item.product.id }}">
@@ -65,9 +69,9 @@
                                                 </button>
                                             </div>
                                         </td>
-                                        <td class="text-center">{{ item.get_total }}đ</td>
+                                        <td class="text-center fw-bold text-primary">{{ item.get_total }}đ</td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-danger remove-item" 
+                                            <button class="btn btn-sm btn-outline-danger rounded-circle remove-item" 
                                                     data-product="{{ item.product.id }}"
                                                     title="Xóa sản phẩm">
                                                 <i class="fas fa-trash"></i>
@@ -79,51 +83,157 @@
                             </table>
                         </div>
 
-                        <div class="card mt-4">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
+                        <div class="row mt-5">
+                            <div class="col-md-6 mb-4 mb-md-0">
+                                <div class="card border-0 rounded-4 shadow-sm h-100">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title fw-bold mb-3">
+                                            <i class="fas fa-tag me-2 text-primary"></i>Mã giảm giá
+                                        </h5>
+                                        <p class="text-muted small mb-3">Nhập mã giảm giá nếu bạn có</p>
                                         <div class="input-group">
-                                            <input type="text" class="form-control" placeholder="Nhập mã giảm giá">
-                                            <button class="btn btn-outline-primary" type="button">Áp dụng</button>
+                                            <input type="text" class="form-control rounded-start-pill" placeholder="Nhập mã giảm giá">
+                                            <button class="btn btn-primary rounded-end-pill px-4" type="button">Áp dụng</button>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="text-end">
-                                            <div class="mb-2">
-                                                <span>Tạm tính:</span>
-                                                <span class="h5 ms-2">{{ order.get_cart_total }}đ</span>
-                                            </div>
-                                            <div class="mb-2">
-                                                <span>Giảm giá:</span>
-                                                <span class="h5 ms-2 text-danger">0đ</span>
-                                            </div>
-                                            <hr>
-                                            <div class="mb-3">
-                                                <span>Tổng cộng:</span>
-                                                <span class="h4 ms-2 text-primary">{{ order.get_cart_total }}đ</span>
-                                            </div>
-                                            <a href="{% url 'checkout' %}" class="btn btn-primary btn-lg">
-                                                Thanh toán <i class="fas fa-arrow-right ms-2"></i>
-                                            </a>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 rounded-4 bg-light shadow-sm">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title fw-bold mb-4">
+                                            <i class="fas fa-receipt me-2 text-primary"></i>Tổng đơn hàng
+                                        </h5>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="text-muted">Tạm tính:</span>
+                                            <span class="fw-bold">{{ order.get_cart_total }}đ</span>
                                         </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="text-muted">Giảm giá:</span>
+                                            <span class="fw-bold text-danger">0đ</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="text-muted">Phí vận chuyển:</span>
+                                            <span class="fw-bold text-success">Miễn phí</span>
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex justify-content-between align-items-center mb-4">
+                                            <span class="h5 mb-0">Tổng cộng:</span>
+                                            <span class="h4 mb-0 text-primary fw-bold">{{ order.get_cart_total }}đ</span>
+                                        </div>
+                                        <a href="{% url 'checkout' %}" class="btn btn-primary btn-lg w-100 rounded-pill">
+                                            <i class="fas fa-credit-card me-2"></i>Thanh toán ngay
+                                        </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     {% else %}
                         <div class="text-center py-5">
-                            <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
-                            <h4>Giỏ hàng của bạn đang trống</h4>
-                            <p class="text-muted mb-4">Hãy thêm sản phẩm vào giỏ hàng</p>
-                            <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
-                                Tiếp tục mua sắm
+                            <div class="empty-cart-icon mb-4">
+                                <i class="fas fa-shopping-cart fa-5x text-muted opacity-50"></i>
+                                <i class="fas fa-times fa-2x text-danger position-absolute" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></i>
+                            </div>
+                            <h3 class="fw-bold mb-3">Giỏ hàng của bạn đang trống</h3>
+                            <p class="text-muted mb-4 lead">Hãy thêm sản phẩm vào giỏ hàng để tiếp tục</p>
+                            <a href="{% url 'home' %}" class="btn btn-primary btn-lg rounded-pill px-5">
+                                <i class="fas fa-utensils me-2"></i>Khám phá món ăn
                             </a>
                         </div>
                     {% endif %}
                 </div>
             </div>
+            
+            {% if items %}
+            <div class="mt-4 text-center">
+                <h5 class="fw-bold mb-4">Có thể bạn cũng thích</h5>
+                <div class="row">
+                    <!-- Placeholder for recommended products -->
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card border-0 rounded-4 shadow-sm hover-card h-100">
+                            <img src="/static/app/images/placeholder.png" class="card-img-top rounded-top-4" style="height: 150px; object-fit: cover;">
+                            <div class="card-body">
+                                <h6 class="card-title">Sản phẩm gợi ý</h6>
+                                <p class="text-primary fw-bold mb-0">45,000đ</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card border-0 rounded-4 shadow-sm hover-card h-100">
+                            <img src="/static/app/images/placeholder.png" class="card-img-top rounded-top-4" style="height: 150px; object-fit: cover;">
+                            <div class="card-body">
+                                <h6 class="card-title">Sản phẩm gợi ý</h6>
+                                <p class="text-primary fw-bold mb-0">45,000đ</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card border-0 rounded-4 shadow-sm hover-card h-100">
+                            <img src="/static/app/images/placeholder.png" class="card-img-top rounded-top-4" style="height: 150px; object-fit: cover;">
+                            <div class="card-body">
+                                <h6 class="card-title">Sản phẩm gợi ý</h6>
+                                <p class="text-primary fw-bold mb-0">45,000đ</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="card border-0 rounded-4 shadow-sm hover-card h-100">
+                            <img src="/static/app/images/placeholder.png" class="card-img-top rounded-top-4" style="height: 150px; object-fit: cover;">
+                            <div class="card-body">
+                                <h6 class="card-title">Sản phẩm gợi ý</h6>
+                                <p class="text-primary fw-bold mb-0">45,000đ</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+.product-row:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.product-row:hover .product-img {
+    transform: scale(1.1);
+}
+
+.product-img-wrapper {
+    overflow: hidden;
+}
+
+.quantity-control .btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hover-card {
+    transition: all 0.3s ease;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.empty-cart-icon {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 767.98px) {
+    .table-responsive {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+}
+</style>
 {% endblock cart_content %}

@@ -15,6 +15,7 @@ urlpatterns = [
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin-products/', views.admin_products, name='admin_products'),
     path('admin-orders/', views.admin_orders, name='admin_orders'),
+    path('admin-orders/delete/<int:order_id>/', views.delete_order, name='delete_order'),
     path('admin-customers/', views.admin_customers, name='admin_customers'),
     path('admin-categories/', views.admin_categories, name='admin_categories'),
     path('admin-customers/toggle-status/', views.admin_customers, name='admin_toggle_customer'),
