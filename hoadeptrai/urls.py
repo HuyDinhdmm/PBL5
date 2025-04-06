@@ -20,4 +20,6 @@ urlpatterns = [
     path('admin-categories/', views.admin_categories, name='admin_categories'),
     path('admin-customers/toggle-status/', views.admin_customers, name='admin_toggle_customer'),
     path('admin-customers/<int:customer_id>/details/', views.admin_customer_details, name='admin_customer_details'),
+    path('chat/init/<int:seller_id>/', views.init_chat, name='init_chat'),
+    path('chat/<str:room_name>/', views.chat_room, name='chat_room'),
 ]

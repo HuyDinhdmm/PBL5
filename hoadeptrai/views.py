@@ -2,12 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Customer, Product, Order, OrderItem, Category  # Add Category to imports
+from .models import Customer, Product, Order, OrderItem, Category, ChatRoom  # Add Category and ChatRoom to imports
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Sum, Count
 from django.utils import timezone
 from datetime import timedelta
 from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required
+from .models import ChatRoom, Customer, Message
 
 def register(request):
     if request.method == 'POST':
@@ -369,3 +371,25 @@ def admin_categories(request):
         'categories': categories,
     }
     return render(request, 'admin/categories.html', context)
+
+@login_required
+def init_chat(request, seller_id):
+    seller = get_object_or_404(Customer, id=seller_id, role='seller')
+    if request.user.role == 'customer':
+        chat = request.user.get_or_create_chat(seller)
+        return redirect('chat_room', room_name=chat.name)
+    return redirect('home')
+
+@login_required
+def chat_room(request, room_name):
+    chat = get_object_or_404(ChatRoom, name=room_name)
+    
+    # Security check - only allow participants to view chat
+    if request.user not in [chat.customer, chat.seller]:
+        return redirect('home')
+        
+    messages = Message.objects.filter(room=chat).order_by('timestamp')
+    return render(request, 'app/chat_room.html', {
+        'chat': chat,
+        'messages': messages
+    })

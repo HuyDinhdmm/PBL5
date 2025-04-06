@@ -36,6 +36,13 @@
             <button onclick="addToCart({{ product.id }})" class="btn btn-primary btn-lg">
                 <i class="fas fa-shopping-cart me-2"></i>Thêm vào giỏ
             </button>
+            
+            <!-- Add this where you want the contact button to appear -->
+            {% if user.is_authenticated and user.role == 'customer' %}
+            <a href="{% url 'init_chat' product.seller.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-comments"></i> Contact Seller
+            </a>
+            {% endif %}
         </div>
     </div>
 

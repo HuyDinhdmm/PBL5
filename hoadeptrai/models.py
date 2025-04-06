@@ -20,6 +20,21 @@ class Customer(AbstractUser):
     def __str__(self):
         return self.username
 
+    def get_or_create_chat(self, seller):
+        """Get existing chat or create new one with seller"""
+        chat = ChatRoom.objects.filter(
+            customer=self,
+            seller=seller
+        ).first()
+        
+        if not chat and self.role == 'customer' and seller.role == 'seller':
+            chat = ChatRoom.objects.create(
+                name=f"chat_{self.id}_{seller.id}",
+                customer=self,
+                seller=seller
+            )
+        return chat
+
 # Category Model
 class Category(models.Model):
     category_name = models.CharField(max_length=255)
@@ -66,12 +81,11 @@ class Order(models.Model):
     )
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     order_date = models.DateTimeField(auto_now_add=True)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    shipping_address = models.CharField(max_length=255)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # Added default
+    shipping_address = models.CharField(max_length=255, default='')  # Added default
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_method = models.CharField(max_length=50, null=True, blank=True)
     promotion = models.ForeignKey('Promotion', on_delete=models.SET_NULL, null=True, blank=True)
-    complete = models.BooleanField(default=False)  # Add this field
 
     @property
     def get_cart_total(self):
@@ -83,13 +97,8 @@ class Order(models.Model):
         orderitems = self.orderitem_set.all()
         return sum([item.quantity for item in orderitems])
 
-    @property
-    def is_complete(self):
-        return self.status in ['delivered', 'cancelled']
-
-    @property
-    def is_cart(self):
-        return self.status == 'pending'
+    def __str__(self):
+        return f"Order #{self.id} - {self.customer.username}"
 
 # Order Item Model
 class OrderItem(models.Model):
@@ -106,10 +115,10 @@ class OrderItem(models.Model):
     def get_total(self):
         return self.quantity * self.price
 
-# Message Model
-class Message(models.Model):
-    sender = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sent_messages')
-    receiver = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='received_messages')
+# DirectMessage Model
+class DirectMessage(models.Model):
+    sender = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='sent_direct_messages')
+    receiver = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='received_direct_messages')
     message_text = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
@@ -127,3 +136,29 @@ class Notification(models.Model):
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class ChatRoom(models.Model):
+    name = models.CharField(max_length=128, unique=True)
+    customer = models.ForeignKey(Customer, related_name='customer_chats', 
+                               limit_choices_to={'role': 'customer'}, 
+                               on_delete=models.CASCADE)
+    seller = models.ForeignKey(Customer, related_name='seller_chats',
+                             limit_choices_to={'role': 'seller'},
+                             on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Chat between {self.customer.username} and {self.seller.username}"
+
+class Message(models.Model):
+    room = models.ForeignKey(ChatRoom, related_name='messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"Message from {self.sender.username} at {self.timestamp}"
