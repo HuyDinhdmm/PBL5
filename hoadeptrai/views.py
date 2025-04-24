@@ -2,12 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Customer, Product, Order, OrderItem, Category  # Add Category to imports
+from .models import Customer, Product, Order, OrderItem, Category, Message  # Add Message to imports
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from datetime import timedelta
 from django.template.loader import render_to_string
+import random
+import string
 
 def register(request):
     if request.method == 'POST':
@@ -49,13 +51,18 @@ def login(request):
     return render(request, 'app/login.html')
 
 def home(request):
-    products = Product.objects.all()
+    category_id = request.GET.get('category')
+    
+    if category_id:
+        products = Product.objects.filter(category_id=category_id, status=True)
+    else:
+        products = Product.objects.filter(status=True)
+        
     categories = Category.objects.all()
-    print(f"Number of products: {products.count()}")  # For debugging
-    print(f"Number of categories: {categories.count()}")  # For debugging
+    
     context = {
         'Products': products,
-        'categories': categories
+        'categories': categories,
     }
     return render(request, 'app/home.html', context)
 
@@ -65,19 +72,29 @@ def cart(request):
         order, created = Order.objects.get_or_create(
             customer=customer, 
             status='pending',
-            defaults={
-                'total_amount': 0,
-                'shipping_address': customer.address or ''
-            }
+            defaults={'total_amount': 0, 'shipping_address': customer.address or ''}
         )
         items = order.orderitem_set.all()
+        
+        # Lấy category của các sản phẩm trong giỏ hàng
+        cart_categories = [item.product.category for item in items]
+        
+        # Lấy các sản phẩm đề xuất từ cùng category
+        recommended_products = Product.objects.filter(
+            category__in=cart_categories,
+            status=True  # Chỉ lấy sản phẩm còn hàng
+        ).exclude(
+            id__in=[item.product.id for item in items]  # Loại bỏ sản phẩm đã có trong giỏ
+        ).distinct().order_by('?')[:8]  # Lấy ngẫu nhiên 8 sản phẩm
     else:
         items = []
         order = {'get_cart_total': 0, 'get_cart_items': 0}
-    
+        recommended_products = []
+
     context = {
         'items': items,
-        'order': order
+        'order': order,
+        'recommended_products': recommended_products
     }
     return render(request, 'app/cart.html', context)
 
@@ -218,6 +235,75 @@ def search_products(request):
     }
     return render(request, 'app/search_results.html', context)
 
+def user_order_history(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    orders = Order.objects.filter(customer=request.user).order_by('-order_date')
+    
+    for order in orders:
+        order.items = order.orderitem_set.all()
+        
+    context = {
+        'orders': orders
+    }
+    return render(request, 'app/order_history.html', context)
+
+def order_detail(request, order_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+        
+    order = get_object_or_404(Order, id=order_id, customer=request.user)
+    items = order.orderitem_set.all()
+    
+    data = {
+        'order_id': order.id,
+        'date': order.order_date.strftime('%d/%m/%Y %H:%M'),
+        'status': order.status,
+        'payment_method': order.payment_method,
+        'shipping_address': order.shipping_address,
+        'items': [],
+        'total': float(order.total_amount)
+    }
+    
+    for item in items:
+        data['items'].append({
+            'product': item.product.product_name,
+            'quantity': item.quantity, 
+            'price': float(item.price),
+            'total': float(item.get_total)
+        })
+    
+    return JsonResponse(data)
+
+def user_profile(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+        
+    if request.method == 'POST':
+        user = request.user
+        user.first_name = request.POST.get('first_name', '')
+        user.last_name = request.POST.get('last_name', '')
+        user.email = request.POST.get('email', '')
+        user.phone_number = request.POST.get('phone_number', '')
+        user.address = request.POST.get('address', '')
+        
+        # Handle password change
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        if current_password and new_password:
+            if user.check_password(current_password):
+                user.set_password(new_password)
+                messages.success(request, 'Mật khẩu đã được cập nhật')
+            else:
+                messages.error(request, 'Mật khẩu hiện tại không đúng')
+        
+        user.save()
+        messages.success(request, 'Thông tin tài khoản đã được cập nhật')
+        return redirect('user_profile')
+        
+    return render(request, 'app/profile.html', {'user': request.user})
+
 @staff_member_required
 def admin_dashboard(request):
     # Get statistics
@@ -296,8 +382,46 @@ def admin_products(request):
 
 @staff_member_required
 def admin_orders(request):
+    if request.method == 'POST':
+        order_id = request.POST.get('order_id')
+        new_status = request.POST.get('status')
+        if order_id and new_status:
+            order = get_object_or_404(Order, id=order_id)
+            order.status = new_status
+            order.save()
+            messages.success(request, 'Order status updated successfully')
+            return redirect('admin_orders')
+
     orders = Order.objects.all().order_by('-order_date')
     return render(request, 'admin/orders.html', {'orders': orders})
+
+@staff_member_required
+def admin_order_detail(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    items = order.orderitem_set.all()
+
+    # Định dạng dữ liệu trả về
+    return JsonResponse({
+        'order_id': order.id,
+        'date': order.order_date.strftime('%d/%m/%Y %H:%M'),
+        'status': order.status,
+        'payment_method': order.payment_method or 'Không xác định',
+        'customer': {
+            'name': order.customer.username,
+            'email': order.customer.email,
+            'phone': order.customer.phone_number or 'Chưa cập nhật',
+        },
+        'shipping_address': order.shipping_address,
+        'items': [{
+            'product': item.product.product_name,
+            'category': item.product.category.category_name,
+            'image': item.product.image_url,
+            'quantity': item.quantity,
+            'price': float(item.price),
+            'total': float(item.get_total)
+        } for item in items],
+        'total': float(order.total_amount)
+    })
 
 @staff_member_required
 def delete_order(request, order_id):
@@ -315,16 +439,37 @@ def admin_customers(request):
         if action == 'toggle_status':
             try:
                 customer = Customer.objects.get(id=customer_id)
-                customer.is_active = not customer.is_active
-                customer.save()
-                messages.success(request, f'Customer status updated successfully')
+                if customer.role != 'admin':
+                    customer.is_active = not customer.is_active
+                    customer.save()
+                    messages.success(request, f'Customer status updated successfully')
                 return JsonResponse({'success': True})
             except Customer.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)
             except Exception as e:
                 return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        
+        elif action == 'edit':
+            try:
+                customer = Customer.objects.get(id=customer_id)
+                if customer.role != 'admin':
+                    customer.email = request.POST.get('email')
+                    customer.phone_number = request.POST.get('phone_number')
+                    customer.address = request.POST.get('address')
+                    customer.role = request.POST.get('role')
+                    customer.is_active = request.POST.get('is_active') == 'on'
+                    customer.save()
+                    messages.success(request, 'Customer updated successfully')
+                return redirect('admin_customers')
+            except Customer.DoesNotExist:
+                messages.error(request, 'Customer not found')
+                return redirect('admin_customers')
             
-    customers = Customer.objects.filter(role='customer').order_by('-date_joined')
+    # Only show non-admin users or admins if current user is admin
+    if request.user.role == 'admin':
+        customers = Customer.objects.all().order_by('-date_joined')
+    else:
+        customers = Customer.objects.exclude(role='admin').order_by('-date_joined')
     return render(request, 'admin/customers.html', {'customers': customers})
 
 @staff_member_required
@@ -369,3 +514,149 @@ def admin_categories(request):
         'categories': categories,
     }
     return render(request, 'admin/categories.html', context)
+
+@staff_member_required
+def admin_change_password(request):
+    if request.method == 'POST':
+        try:
+            customer_id = request.POST.get('customer_id')
+            new_password = request.POST.get('new_password')
+            customer = Customer.objects.get(id=customer_id)
+            
+            if customer.role != 'admin' or request.user.role == 'admin':
+                customer.set_password(new_password)
+                customer.save()
+                return JsonResponse({'success': True})
+            return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
+        except Customer.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)
+    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
+@staff_member_required
+def admin_reset_password(request):
+    if request.method == 'POST':
+        try:
+            customer_id = request.POST.get('customer_id')
+            customer = Customer.objects.get(id=customer_id)
+            
+            if customer.role != 'admin' or request.user.role == 'admin':
+                # Generate random password
+                new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+                customer.set_password(new_password)
+                customer.save()
+                return JsonResponse({'success': True, 'new_password': new_password})
+            return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
+        except Customer.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Customer not found'}, status=404)
+    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
+@staff_member_required 
+def admin_chat(request):
+    # Get all customers for admin, or only assigned customers for sellers
+    if request.user.role == 'admin':
+        users = Customer.objects.filter(role='customer')
+    else:
+        # For sellers, only show their customers (you'll need to implement this logic)
+        users = Customer.objects.filter(role='customer')
+    
+    # Add unread messages flag
+    for user in users:
+        user.has_unread = Message.objects.filter(
+            sender=user,
+            receiver=request.user,
+            is_read=False
+        ).exists()
+    
+    return render(request, 'admin/chat.html', {'users': users})
+
+@staff_member_required
+def send_message(request):
+    if request.method == 'POST':
+        receiver_id = request.POST.get('receiver_id')
+        message_text = request.POST.get('message')
+        
+        try:
+            receiver = Customer.objects.get(id=receiver_id)
+            Message.objects.create(
+                sender=request.user,
+                receiver=receiver,
+                message_text=message_text
+            )
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+            
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+@staff_member_required
+def get_messages(request, user_id):
+    try:
+        other_user = Customer.objects.get(id=user_id)
+        messages = Message.objects.filter(
+            (Q(sender=request.user, receiver=other_user) |
+             Q(sender=other_user, receiver=request.user))
+        ).order_by('sent_at')
+        
+        # Mark messages as read
+        messages.filter(receiver=request.user, is_read=False).update(is_read=True)
+        
+        messages_data = [{
+            'sender_id': msg.sender.id,
+            'message': msg.message_text,
+            'sent_at': msg.sent_at.strftime('%I:%M %p, %d/%m/%Y')
+        } for msg in messages]
+        
+        return JsonResponse({'messages': messages_data})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+def customer_chat(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    return render(request, 'app/customer_chat.html')
+
+def customer_chat_send(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+    
+    if request.method == 'POST':
+        message_text = request.POST.get('message')
+        try:
+            # Find an admin to send the message to
+            admin = Customer.objects.filter(role='admin').first()
+            if not admin:
+                admin = Customer.objects.filter(is_staff=True).first()
+            
+            if admin:
+                Message.objects.create(
+                    sender=request.user,
+                    receiver=admin,
+                    message_text=message_text
+                )
+                return JsonResponse({'success': True})
+            return JsonResponse({'success': False, 'error': 'No admin available'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+            
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+def customer_chat_messages(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+        
+    try:
+        # Get messages between customer and any admin
+        messages = Message.objects.filter(
+            (Q(sender=request.user) | Q(receiver=request.user))
+        ).order_by('sent_at')
+        
+        messages_data = [{
+            'id': msg.id,  # Add message id
+            'sender_id': msg.sender.id,
+            'message': msg.message_text,
+            'sent_at': msg.sent_at.strftime('%I:%M %p, %d/%m/%Y')
+        } for msg in messages]
+        
+        return JsonResponse({'messages': messages_data})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)

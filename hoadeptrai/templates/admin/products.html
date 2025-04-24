@@ -14,14 +14,19 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Product List</h6>
-            <div class="d-flex gap-2">
-                <select class="form-select" id="categoryFilter">
+            <div class="d-flex gap-3 align-items-center">
+                <select class="form-select" id="categoryFilter" style="width: 150px;">
                     <option value="">All Categories</option>
                     {% for category in categories %}
                     <option value="{{ category.category_name }}">{{ category.category_name }}</option>
                     {% endfor %}
                 </select>
-                <input type="text" class="form-control" id="searchProduct" placeholder="Search products...">
+                <div class="d-flex gap-2 align-items-center">
+                    <input type="number" class="form-control" id="minPrice" placeholder="Min Price" style="width: 120px;">
+                    <span>-</span>
+                    <input type="number" class="form-control" id="maxPrice" placeholder="Max Price" style="width: 120px;">
+                </div>
+                <input type="text" class="form-control" id="searchProduct" placeholder="Search products..." style="width: 200px;">
             </div>
         </div>
         <div class="card-body">
@@ -218,29 +223,27 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Search functionality
-    $("#searchProduct").on("keyup", function() {
-        var value = $(this).val().toLowerCase();
-        filterProducts();
-    });
-
-    // Category filter
-    $("#categoryFilter").on("change", function() {
-        filterProducts();
-    });
-
     function filterProducts() {
         var searchValue = $("#searchProduct").val().toLowerCase();
         var categoryValue = $("#categoryFilter").val().toLowerCase();
-        
-        $("table tbody tr").filter(function() {
-            var text = $(this).text().toLowerCase();
-            var category = $(this).find("td:eq(2)").text().toLowerCase();
+        var minPrice = parseFloat($("#minPrice").val()) || 0;
+        var maxPrice = parseFloat($("#maxPrice").val()) || Infinity;
+
+        $("table tbody tr").each(function() {
+            var row = $(this);
+            var text = row.text().toLowerCase();
+            var category = row.find("td:eq(2)").text().toLowerCase();
+            var price = parseFloat(row.find("td:eq(3)").text().replace('đ', '').replace(/,/g, ''));
+
             var matchesSearch = text.indexOf(searchValue) > -1;
             var matchesCategory = categoryValue === "" || category === categoryValue;
-            $(this).toggle(matchesSearch && matchesCategory);
+            var matchesPrice = price >= minPrice && (maxPrice === Infinity || price <= maxPrice);
+
+            row.toggle(matchesSearch && matchesCategory && matchesPrice);
         });
     }
+
+    $("#searchProduct, #categoryFilter, #minPrice, #maxPrice").on("input change", filterProducts);
 
     // Edit product
     $('.edit-product').click(function() {

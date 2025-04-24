@@ -19,13 +19,24 @@
 
         <!-- Product Info -->
         <div class="col-md-6">
-            <h2 class="mb-3">{{ product.product_name }}</h2>
-            <span class="badge bg-primary mb-3">{{ product.category.category_name }}</span>
-            {% if product.status %}
-                <span class="badge bg-success">Còn hàng</span>
-            {% else %}
-                <span class="badge bg-danger">Hết hàng</span>
-            {% endif %}
+            <div class="d-flex flex-column align-items-start mb-3">
+                <h2 class="mb-2">{{ product.product_name }}</h2>
+                <div class="d-flex flex-column gap-2">
+                    <div class="d-flex gap-2">
+                        {% if product.category.parent_category %}
+                            <span class="badge bg-secondary">{{ product.category.parent_category.category_name }}</span>
+                            <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                        {% else %}
+                            <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                        {% endif %}
+                    </div>
+                    {% if product.status %}
+                        <span class="badge bg-success" style="width: fit-content">Còn hàng</span>
+                    {% else %}
+                        <span class="badge bg-danger" style="width: fit-content">Hết hàng</span>
+                    {% endif %}
+                </div>
+            </div>
             
             <h3 class="text-primary my-3">{{ product.price }}đ</h3>
             
@@ -33,9 +44,15 @@
             
             <hr class="my-4">
             
-            <button onclick="addToCart({{ product.id }})" class="btn btn-primary btn-lg">
-                <i class="fas fa-shopping-cart me-2"></i>Thêm vào giỏ
-            </button>
+            <div class="d-flex gap-3">
+                <button onclick="addToCart({{ product.id }})" class="btn btn-outline-primary btn-lg flex-grow-1">
+                    <i class="fas fa-shopping-cart me-2"></i>Thêm vào giỏ
+                </button>
+                <a href="{% url 'checkout' %}?product_id={{ product.id }}&buy_now=true" 
+                   class="btn btn-primary btn-lg flex-grow-1">
+                    <i class="fas fa-bolt me-2"></i>Mua ngay
+                </a>
+            </div>
         </div>
     </div>
 

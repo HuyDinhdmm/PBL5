@@ -58,6 +58,9 @@
     </div>
 </div>
 
+<!-- Include Order Detail Modal -->
+{% include 'admin/partials/order_detail_modal.html' %}
+
 <!-- Delete Order Modal -->
 <div class="modal fade" id="deleteOrderModal" tabindex="-1">
     <div class="modal-dialog">
@@ -87,6 +90,71 @@ $(document).ready(function() {
         $('#deleteOrderNumber').text(orderNumber);
         $('#confirmDelete').attr('href', `/admin-orders/delete/${orderId}/`);
     });
+
+    $('.view-order').click(function() {
+        var orderId = $(this).data('order-id');
+        $('#updateOrderId').val(orderId);
+        
+        $.get(`/admin-orders/detail/${orderId}/`, function(data) {
+            // Update order info
+            $('#orderId').text('#' + data.order_id);
+            $('#orderDate').text(data.date);
+            $('#orderStatus')
+                .text(data.status)
+                .removeClass()
+                .addClass('badge ' + getStatusClass(data.status));
+            $('#paymentMethod').text(data.payment_method || 'Not specified');
+            
+            // Update customer info
+            $('#customerName').text(data.customer.name);
+            $('#customerEmail').text(data.customer.email);
+            $('#customerPhone').text(data.customer.phone || 'Not provided');
+            $('#shippingAddress').text(data.shipping_address);
+            
+            // Update items table
+            var tbody = $('#orderItemsTable tbody');
+            tbody.empty();
+            data.items.forEach(function(item) {
+                tbody.append(`
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="${item.image || '/static/app/images/placeholder.png'}" 
+                                     alt="${item.product}" 
+                                     class="me-2 rounded"
+                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                <div>
+                                    <div class="fw-bold">${item.product}</div>
+                                    <small class="text-muted">${item.category || ''}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">${item.quantity}</td>
+                        <td class="text-end">${item.price}đ</td>
+                        <td class="text-end">${item.total}đ</td>
+                    </tr>
+                `);
+            });
+            
+            // Update totals
+            $('#subtotal').text(data.total + 'đ');
+            $('#orderTotal').text(data.total + 'đ');
+            
+            // Update status dropdown
+            $('select[name="status"]').val(data.status);
+        });
+    });
+
+    function getStatusClass(status) {
+        switch(status) {
+            case 'pending': return 'bg-warning';
+            case 'processing': return 'bg-info';
+            case 'shipped': return 'bg-primary';
+            case 'delivered': return 'bg-success';
+            case 'cancelled': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
 });
 </script>
 {% endblock %}

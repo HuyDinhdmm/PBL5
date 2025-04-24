@@ -1,0 +1,215 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="container my-5" style="margin-bottom: 100px !important;">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm rounded-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Chat với Admin</h5>
+                </div>
+                <div class="card-body">
+                    <div id="chatMessages" style="height: 400px; overflow-y: auto;" class="mb-3 p-3">
+                        <!-- Messages will be loaded here -->
+                    </div>
+                    <form id="messageForm">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="messageInput" placeholder="Type your message..." style="width: 100%;">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>                        
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add notification div -->
+<div class="message-notification" id="messageNotification">
+    <i class="fas fa-envelope me-2"></i>Bạn có tin nhắn mới
+</div>
+
+<style>
+.message {
+    margin-bottom: 1.5rem; /* Tăng khoảng cách giữa các tin nhắn */
+    max-width: 75%;
+    clear: both; /* Đảm bảo tin nhắn không bị chồng lấp */
+    position: relative; /* Để căn chỉnh thời gian */
+}
+
+.message.sent {
+    margin-left: auto;
+    margin-right: 1rem; /* Thêm margin bên phải cho tin nhắn gửi đi */
+}
+
+.message.received {
+    margin-right: auto;
+    margin-left: 1rem; /* Thêm margin bên trái cho tin nhắn nhận */
+}
+
+.message-bubble {
+    padding: 1rem 1.2rem; /* Tăng padding để nội dung thoáng hơn */
+    border-radius: 1.2rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Thêm bóng để nổi bật */
+    word-wrap: break-word; /* Đảm bảo text không bị tràn */
+    max-width: 100%;
+}
+
+.message.sent .message-bubble {
+    background-color: #0d6efd;
+    color: white;
+    border-bottom-right-radius: 0.3rem;
+}
+
+.message.received .message-bubble {
+    background-color: #f0f0f0;
+    border-bottom-left-radius: 0.3rem;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    opacity: 0.8; /* Làm mờ thời gian một chút */
+}
+
+/* Thêm style mới để tạo khoảng cách tốt hơn */
+#chatMessages {
+    padding: 1.5rem !important;
+    background-color: #f8f9fa; /* Màu nền nhẹ cho khung chat */
+}
+
+#messageForm {
+    padding: 1rem;
+    background-color: white;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.input-group {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+#messageInput {
+    width: 100% !important;
+}
+
+.message-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 5px;
+    display: none;
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    const messagesList = $('#chatMessages');
+    const messageForm = $('#messageForm');
+    const messageInput = $('#messageInput');
+    let lastMessageId = 0;
+
+    function showNotification() {
+        const notification = $('#messageNotification');
+        notification.show();
+        setTimeout(() => notification.fadeOut(), 3000);
+    }
+
+    function loadMessages() {
+        $.get('/customer-chat/messages/', function(response) {
+            let hasNewMessages = false;
+            let messagesHtml = '';
+            
+            response.messages.forEach(function(msg) {
+                if (msg.id > lastMessageId) {
+                    hasNewMessages = true;
+                    lastMessageId = Math.max(lastMessageId, msg.id);
+                }
+                
+                const isCustomer = msg.sender_id === {{ request.user.id }};
+                messagesHtml += `
+                    <div class="message ${isCustomer ? 'sent' : 'received'}" data-message-id="${msg.id}">
+                        <div class="message-bubble">
+                            ${msg.message}
+                        </div>
+                        <div class="message-time text-muted ${isCustomer ? 'text-end' : ''}">
+                            ${msg.sent_at}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (hasNewMessages) {
+                messagesList.html(messagesHtml);
+                messagesList.scrollTop(messagesList[0].scrollHeight);
+                if (!document.hasFocus()) {
+                    showNotification();
+                }
+            }
+        });
+    }
+
+    // Handle message sending
+    messageForm.on('submit', function(e) {
+        e.preventDefault();
+        const message = messageInput.val().trim();
+        if (!message) return;
+
+        messageInput.prop('disabled', true);
+
+        $.ajax({
+            url: '/customer-chat/send/',
+            type: 'POST',
+            data: {
+                message: message,
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    messageInput.val('');
+                    loadMessages();
+                }
+            },
+            complete: function() {
+                messageInput.prop('disabled', false);
+                messageInput.focus();
+            }
+        });
+    });
+
+    // Load initial messages
+    loadMessages();
+
+    // Refresh messages more frequently
+    setInterval(loadMessages, 3000);
+
+    // Listen for Enter key
+    messageInput.on('keypress', function(e) {
+        if (e.which === 13 && !e.shiftKey) {
+            e.preventDefault();
+            messageForm.submit();
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock main_content %}

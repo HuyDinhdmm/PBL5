@@ -44,13 +44,20 @@
                     {% endif %}
                 </div>
                 <div class="card-body d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h5 class="card-title mb-0">
+                    <div class="d-flex flex-column mb-2">
+                        <h5 class="card-title mb-2">
                             <a href="{% url 'product_detail' product.id %}" class="text-decoration-none text-dark">
                                 {{ product.product_name }}
                             </a>
                         </h5>
-                        <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if product.category.parent_category %}
+                                <span class="badge bg-secondary">{{ product.category.parent_category.category_name }}</span>
+                                <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                            {% else %}
+                                <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                            {% endif %}
+                        </div>
                     </div>
                     <p class="card-text text-muted small mb-3">{{ product.description|truncatewords:15 }}</p>
                     <div class="mt-auto">
@@ -82,29 +89,31 @@
         </div>
         {% for category in categories %}
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-            <div class="card text-center hover-shadow h-100">
-                <div class="card-body">
-                    <div class="category-icon mb-3">
-                        {% if category.category_name == "Đồ ăn nhanh" %}
-                            <i class="fas fa-hamburger fa-3x text-primary"></i>
-                        {% elif category.category_name == "Món chính" %}
-                            <i class="fas fa-utensils fa-3x text-success"></i>
-                        {% elif category.category_name == "Đồ uống" %}
-                            <i class="fas fa-coffee fa-3x text-warning"></i>
-                        {% elif category.category_name == "Tráng miệng" %}
-                            <i class="fas fa-ice-cream fa-3x text-danger"></i>
-                        {% else %}
-                            <i class="fas fa-cookie-bite fa-3x text-secondary"></i>
-                        {% endif %}
+            <a href="{% url 'home' %}?category={{ category.id }}" class="text-decoration-none">
+                <div class="card text-center hover-shadow h-100">
+                    <div class="card-body">
+                        <div class="category-icon mb-3">
+                            {% if category.category_name == "Đồ ăn nhanh" %}
+                                <i class="fas fa-hamburger fa-3x text-primary"></i>
+                            {% elif category.category_name == "Món chính" %}
+                                <i class="fas fa-utensils fa-3x text-success"></i>
+                            {% elif category.category_name == "Đồ uống" %}
+                                <i class="fas fa-coffee fa-3x text-warning"></i>
+                            {% elif category.category_name == "Tráng miệng" %}
+                                <i class="fas fa-ice-cream fa-3x text-danger"></i>
+                            {% else %}
+                                <i class="fas fa-cookie-bite fa-3x text-secondary"></i>
+                            {% endif %}
+                        </div>
+                        <h5 class="card-title text-dark">{{ category.category_name }}</h5>
+                        <p class="text-muted small">
+                            {% with count=category.product_set.count %}
+                                {{ count }} sản phẩm
+                            {% endwith %}
+                        </p>
                     </div>
-                    <h5 class="card-title">{{ category.category_name }}</h5>
-                    <p class="text-muted small">
-                        {% with count=category.product_set.count %}
-                            {{ count }} sản phẩm
-                        {% endwith %}
-                    </p>
                 </div>
-            </div>
+            </a>
         </div>
         {% empty %}
         <div class="col-12 text-center">
