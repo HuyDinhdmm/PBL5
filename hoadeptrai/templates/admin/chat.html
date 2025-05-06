@@ -1,0 +1,189 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Admin Chat{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Users List -->
+        <div class="col-md-4 border-end">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Customers</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="usersList">
+                        {% for user in users %}
+                        <button class="list-group-item list-group-item-action user-item {% if user.has_unread %}fw-bold{% endif %}" 
+                                data-user-id="{{ user.id }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-user-circle me-2"></i>
+                                    {{ user.username }}
+                                </div>
+                                {% if user.has_unread %}
+                                <span class="badge bg-danger rounded-pill">New</span>
+                                {% endif %}
+                            </div>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0" id="chatTitle">Select a customer to start chat</h5>
+                </div>
+                <div class="card-body">
+                    <div id="chatMessages" style="height: 400px; overflow-y: auto;" class="mb-3">
+                        <!-- Messages will be loaded here -->
+                    </div>
+                    <form id="messageForm" class="d-none">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let currentUserId = null;
+    const messagesList = $('#chatMessages');
+    const messageForm = $('#messageForm');
+    const messageInput = $('#messageInput');
+
+    // Load messages when clicking on a user
+    $('.user-item').click(function() {
+        const userId = $(this).data('user-id');
+        const username = $(this).text().trim();
+        currentUserId = userId;
+        
+        // Update UI
+        $('.user-item').removeClass('active');
+        $(this).addClass('active');
+        $('#chatTitle').text(`Chat with ${username}`);
+        messageForm.removeClass('d-none');
+        
+        // Load messages
+        loadMessages(userId);
+        
+        // Remove unread badge
+        $(this).find('.badge').remove();
+    });
+
+    // Send message
+    messageForm.on('submit', function(e) {
+        e.preventDefault();
+        if (!currentUserId) return;
+
+        const message = messageInput.val().trim();
+        if (!message) return;
+
+        $.ajax({
+            url: '/admin-chat/send/',
+            type: 'POST',
+            data: {
+                receiver_id: currentUserId,
+                message: message,
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    messageInput.val('');
+                    loadMessages(currentUserId);
+                }
+            }
+        });
+    });
+
+    function loadMessages(userId) {
+        $.get(`/admin-chat/get-messages/${userId}/`, function(response) {
+            messagesList.html('');
+            response.messages.forEach(function(msg) {
+                const isAdmin = msg.sender_id === {{ request.user.id }};
+                const messageHtml = `
+                    <div class="d-flex ${isAdmin ? 'justify-content-end' : 'justify-content-start'} mb-4">
+                        <div class="message ${isAdmin ? 'bg-primary text-white' : 'bg-light'} p-3 rounded-4 shadow-sm" 
+                             style="max-width: 75%; position: relative;">
+                            <div class="message-text mb-2" style="word-wrap: break-word;">
+                                ${msg.message}
+                            </div>
+                            <small class="text-${isAdmin ? 'light' : 'muted'} opacity-75" 
+                                   style="font-size: 0.75rem;">
+                                ${msg.sent_at}
+                            </small>
+                            <div class="message-arrow ${isAdmin ? 'right' : 'left'}"></div>
+                        </div>
+                    </div>
+                `;
+                messagesList.append(messageHtml);
+            });
+            messagesList.scrollTop(messagesList[0].scrollHeight);
+        });
+    }
+
+    // Auto-refresh messages every 10 seconds
+    setInterval(function() {
+        if (currentUserId) {
+            loadMessages(currentUserId);
+        }
+    }, 10000);
+});
+</script>
+
+<style>
+.message {
+    position: relative;
+    margin: 1rem;
+}
+
+.message-arrow {
+    position: absolute;
+    bottom: -8px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+.message-arrow.left {
+    left: -8px;
+    border-width: 8px 8px 0 0;
+    border-color: #f8f9fa transparent transparent transparent;
+}
+
+.message-arrow.right {
+    right: -8px;
+    border-width: 8px 0 0 8px;
+    border-color: #0d6efd transparent transparent transparent;
+}
+
+#chatMessages {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+}
+
+#messageForm {
+    padding: 1rem;
+    background-color: white;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.input-group {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+</style>
+{% endblock %}
+{% endblock %}

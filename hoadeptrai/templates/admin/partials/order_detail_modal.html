@@ -1,0 +1,111 @@
+<div class="modal fade" id="orderDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-receipt me-2"></i>Chi tiết đơn hàng <span id="orderId"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold text-primary mb-3">
+                                    <i class="fas fa-info-circle me-2"></i>Thông tin đơn hàng
+                                </h6>
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2">
+                                        <span class="text-muted">Mã đơn:</span>
+                                        <span class="fw-bold ms-2" id="orderId"></span>
+                                    </li>
+                                    <li class="mb-2">
+                                        <span class="text-muted">Ngày đặt:</span>
+                                        <span class="ms-2" id="orderDate"></span>
+                                    </li>
+                                    <li class="mb-2">
+                                        <span class="text-muted">Trạng thái:</span>
+                                        <span class="ms-2"><span id="orderStatus" class="badge"></span></span>
+                                    </li>
+                                    <li>
+                                        <span class="text-muted">Phương thức thanh toán:</span>
+                                        <span class="ms-2" id="paymentMethod"></span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold text-primary mb-3">
+                                    <i class="fas fa-user me-2"></i>Thông tin khách hàng
+                                </h6>
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2">
+                                        <span class="text-muted">Tên khách hàng:</span>
+                                        <span class="fw-bold ms-2" id="customerName"></span>
+                                    </li>
+                                    <li class="mb-2">
+                                        <span class="text-muted">Email:</span>
+                                        <span class="ms-2" id="customerEmail"></span>
+                                    </li>
+                                    <li class="mb-2">
+                                        <span class="text-muted">Số điện thoại:</span>
+                                        <span class="ms-2" id="customerPhone"></span>
+                                    </li>
+                                    <li>
+                                        <span class="text-muted">Địa chỉ giao hàng:</span>
+                                        <p class="mb-0 mt-1 ps-2 border-start border-primary" id="shippingAddress"></p>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover" id="orderItemsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th class="text-center" style="width: 100px;">Số lượng</th>
+                                <th class="text-end" style="width: 120px;">Đơn giá</th>
+                                <th class="text-end" style="width: 120px;">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Tạm tính:</strong></td>
+                                <td class="text-end" id="subtotal"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Phí vận chuyển:</strong></td>
+                                <td class="text-end text-success">Miễn phí</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Tổng cộng:</strong></td>
+                                <td class="text-end text-primary fw-bold" id="orderTotal"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <form method="POST" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="order_id" id="updateOrderId">
+                    <select name="status" class="form-select d-inline-block w-auto me-2">
+                        <option value="pending">Chờ xử lý</option>
+                        <option value="processing">Đang xử lý</option>
+                        <option value="shipped">Đang giao</option>
+                        <option value="delivered">Đã giao</option>
+                        <option value="cancelled">Đã hủy</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Cập nhật trạng thái</button>
+                </form>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>

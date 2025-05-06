@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'hoadeptrai'
+    'channels',  # Thêm channels
+    'hoadeptrai',
 ]
 
 MIDDLEWARE = [
@@ -70,6 +71,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'pbl5.wsgi.application'
 
+# Channels configuration
+ASGI_APPLICATION = 'pbl5.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

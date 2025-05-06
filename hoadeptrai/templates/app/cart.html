@@ -92,7 +92,7 @@
                                         </h5>
                                         <p class="text-muted small mb-3">Nhập mã giảm giá nếu bạn có</p>
                                         <div class="input-group">
-                                            <input type="text" class="form-control rounded-start-pill" placeholder="Nhập mã giảm giá">
+                                            <input type="text" id="Discount" class="form-control rounded-start-pill" placeholder="Nhập mã giảm giá">
                                             <button class="btn btn-primary rounded-end-pill px-4" type="button">Áp dụng</button>
                                         </div>
                                     </div>
@@ -145,45 +145,37 @@
             </div>
             
             {% if items %}
-            <div class="mt-4 text-center">
+            <div class="mt-4">
                 <h5 class="fw-bold mb-4">Có thể bạn cũng thích</h5>
-                <div class="row">
-                    <!-- Placeholder for recommended products -->
-                    <div class="col-6 col-md-3 mb-3">
-                        <div class="card border-0 rounded-4 shadow-sm hover-card h-100">
-                            <img src="/static/app/images/placeholder.png" class="card-img-top rounded-top-4" style="height: 150px; object-fit: cover;">
-                            <div class="card-body">
-                                <h6 class="card-title">Sản phẩm gợi ý</h6>
-                                <p class="text-primary fw-bold mb-0">45,000đ</p>
+                <div class="products-slider">
+                    <div class="scrolling-wrapper">
+                        {% for product in recommended_products %}
+                        <div class="product-card">
+                            <div class="card border-0 rounded-4 shadow-sm hover-card">
+                                <img src="{{ product.image_url|default:'/static/app/images/placeholder.png' }}" 
+                                     class="card-img-top rounded-top-4" 
+                                     alt="{{ product.product_name }}"
+                                     style="height: 150px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h6 class="card-title mb-2">{{ product.product_name }}</h6>
+                                    <div class="d-flex flex-wrap gap-2 mb-2">
+                                        {% if product.category.parent_category %}
+                                            <span class="badge bg-secondary">{{ product.category.parent_category.category_name }}</span>
+                                            <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-primary fw-bold mb-3">{{ product.price }}đ</p>
+                                    <div class="d-grid">
+                                        <button onclick="addToCart({{ product.id }})" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-cart-plus me-2"></i>Thêm vào giỏ
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-6 col-md-3 mb-3">
-                        <div class="card border-0 rounded-4 shadow-sm hover-card h-100">
-                            <img src="/static/app/images/placeholder.png" class="card-img-top rounded-top-4" style="height: 150px; object-fit: cover;">
-                            <div class="card-body">
-                                <h6 class="card-title">Sản phẩm gợi ý</h6>
-                                <p class="text-primary fw-bold mb-0">45,000đ</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 mb-3">
-                        <div class="card border-0 rounded-4 shadow-sm hover-card h-100">
-                            <img src="/static/app/images/placeholder.png" class="card-img-top rounded-top-4" style="height: 150px; object-fit: cover;">
-                            <div class="card-body">
-                                <h6 class="card-title">Sản phẩm gợi ý</h6>
-                                <p class="text-primary fw-bold mb-0">45,000đ</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 mb-3">
-                        <div class="card border-0 rounded-4 shadow-sm hover-card h-100">
-                            <img src="/static/app/images/placeholder.png" class="card-img-top rounded-top-4" style="height: 150px; object-fit: cover;">
-                            <div class="card-body">
-                                <h6 class="card-title">Sản phẩm gợi ý</h6>
-                                <p class="text-primary fw-bold mb-0">45,000đ</p>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -227,6 +219,23 @@
     position: relative;
     display: inline-block;
     margin-bottom: 1rem;
+}
+#Discount{
+    width: 100% !important;
+}
+.products-slider {
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.scrolling-wrapper {
+    display: flex;
+    gap: 1rem;
+}
+
+.product-card {
+    flex: 0 0 auto;
+    width: 200px;
 }
 
 @media (max-width: 767.98px) {

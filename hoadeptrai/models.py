@@ -114,6 +114,9 @@ class Message(models.Model):
     sent_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 
+    class Meta:
+        ordering = ['sent_at']
+
 # Favorite Model
 class Favorite(models.Model):
     user = models.ForeignKey(Customer, on_delete=models.CASCADE)

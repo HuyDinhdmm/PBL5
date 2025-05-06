@@ -1,0 +1,115 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="container my-5" style="margin-bottom: 100px !important;">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm rounded-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0">Lịch sử đơn hàng của bạn</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if orders %}
+                        <div class="accordion" id="orderAccordion">
+                            {% for order in orders %}
+                            <div class="accordion-item border mb-3 rounded-3">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#order{{ order.id }}">
+                                        <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                            <span><strong>#{{ order.id }}</strong> - {{ order.order_date|date:"d/m/Y H:i" }}</span>
+                                            <span class="badge {% if order.status == 'pending' %}bg-warning
+                                                            {% elif order.status == 'processing' %}bg-info
+                                                            {% elif order.status == 'shipped' %}bg-primary
+                                                            {% elif order.status == 'delivered' %}bg-success
+                                                            {% else %}bg-danger{% endif %}">
+                                                {{ order.status }}
+                                            </span>
+                                        </div>
+                                    </button>
+                                </h2>
+                                <div id="order{{ order.id }}" class="accordion-collapse collapse" data-bs-parent="#orderAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <h6 class="fw-bold mb-2">Thông tin đơn hàng</h6>
+                                                <p class="mb-1"><i class="fas fa-calendar-alt me-2 text-primary"></i>Ngày đặt: {{ order.order_date|date:"d/m/Y H:i" }}</p>
+                                                <p class="mb-1"><i class="fas fa-credit-card me-2 text-primary"></i>Phương thức: {{ order.payment_method }}</p>
+                                                <p class="mb-1"><i class="fas fa-money-bill-wave me-2 text-primary"></i>Tổng tiền: {{ order.total_amount }}đ</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6 class="fw-bold mb-2">Địa chỉ giao hàng</h6>
+                                                <p class="mb-0"><i class="fas fa-map-marker-alt me-2 text-primary"></i>{{ order.shipping_address }}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <h6 class="fw-bold mb-3">Chi tiết sản phẩm</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-borderless">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Sản phẩm</th>
+                                                        <th class="text-center">Số lượng</th>
+                                                        <th class="text-end">Đơn giá</th>
+                                                        <th class="text-end">Thành tiền</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in order.items %}
+                                                    <tr>
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                <img src="{{ item.product.image_url }}" alt="{{ item.product.product_name }}" 
+                                                                     class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                                                                <span class="ms-2">{{ item.product.product_name }}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-center">{{ item.quantity }}</td>
+                                                        <td class="text-end">{{ item.price }}đ</td>
+                                                        <td class="text-end">{{ item.get_total }}đ</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                                <tfoot class="table-light">
+                                                    <tr>
+                                                        <td colspan="3" class="text-end"><strong>Tổng cộng:</strong></td>
+                                                        <td class="text-end"><strong class="text-primary">{{ order.total_amount }}đ</strong></td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-shopping-bag fa-4x text-muted mb-4"></i>
+                            <h5 class="text-muted mb-3">Bạn chưa có đơn hàng nào</h5>
+                            <a href="{% url 'home' %}" class="btn btn-primary rounded-pill px-4">
+                                <i class="fas fa-shopping-cart me-2"></i>Mua sắm ngay
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.accordion-button:not(.collapsed) {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+}
+
+.table>:not(caption)>*>* {
+    padding: 1rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,1 @@
+create database fastfood_website;hoadeptrai_customerhoadeptrai_customer_groups

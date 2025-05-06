@@ -1,0 +1,241 @@
+/*
+.d-flex .btn{
+    background: orange;
+    border: 2px solid orange;
+    border-radius: 8px;
+    color: #fff;
+}
+.d-flex .btn:hover{
+    background: rgb(228, 150, 7);
+    border: 2px solid rgb(228, 150, 7);
+}
+
+#right1 :hover{
+    color: orange;
+    transition: 300ms;
+}
+
+.row .right2 {
+    margin-left: -10px;
+    height: 180px;
+    width: 180px;
+    border-radius: 10px;
+}
+
+.container .row .col .row .col a {
+    background-color: orange;
+    padding: 10px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: white;
+
+}
+
+.container .row .col .row .col a :hover {
+    background-color: rgb(201, 132, 5);
+}
+#column :hover{
+    transform: scale(0.9);
+    transition: 450ms;
+    border-radius: 10px;
+}
+
+#items :hover {
+    color: orange;
+    transition: 200ms;
+}
+*/
+/* Tổng thể */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+/* Container */
+.container {
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.menuRight {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.choiceMenu {
+    border: 2px black solid;
+    border-radius : 10px;
+}
+
+.flexT {
+    display: flex;
+}
+
+.flexCard {
+    display: flex;
+    flex-direction: column;
+}
+/* List group */
+.list-group-item {
+    border: none;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    color: #444;
+    border-radius: 5px;
+    text-align: left;
+}
+
+.list-group-item:hover {
+    background-color: #007bff;
+    color: #fff;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Ảnh trung tâm */
+img {
+    display: block;
+    margin: 0 auto;
+    border-radius: 10px;
+}
+
+.col-md-7 img {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.col-md-7 img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Phần thông tin bên phải  align-items: center;*/
+.row div {
+    display: flex;
+    flex-direction: column;
+    margin: 5px 0;
+}
+
+.row div i {
+    font-size: 24px;
+    color: #007bff;
+    margin-right: 10px;
+}
+
+/* Các mục thương hiệu */
+.col img {
+    margin-right: 10px;
+    border-radius: 50%;
+}
+
+.col {
+    align-items: center;
+    text-align: center;
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.col:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Sản phẩm */
+#column .col {
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+#column .col:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+#column img {
+    transition: transform 0.3s ease;
+}
+
+#column img:hover {
+    transform: scale(1.05);
+}
+
+/* Nút Add */
+a {
+    text-decoration: none;
+    font-size: 14px;
+    color: #007bff;
+    font-weight: 600;
+    border: 1px solid #007bff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+a:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+/* Cart Styles */
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.img-thumbnail {
+    padding: 0.25rem;
+    border-radius: 0.375rem;
+}
+
+.input-group-sm > .form-control {
+    min-width: 40px;
+}
+
+.remove-item {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    line-height: 32px;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.table td, .table th {
+    vertical-align: middle;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .col-md-7 img {
+        width: 100%;
+    }
+
+    #column .col {
+        margin-bottom: 20px;
+    }
+}
+

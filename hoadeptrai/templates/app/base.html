@@ -20,77 +20,150 @@
         <title>Fast Food</title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="">
+        <style>
+          .custom-footer {
+            background-color:rgb(255, 112, 112); /* đỏ nhẹ */
+            border-top: 1px solid #e99;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: all 0.3s ease-in-out;
+          }
+        
+          .custom-footer:hover {
+              background-color:rgb(247, 43, 43); /* hover màu hơi đậm hơn */
+          }
+          .navbar .container {
+            padding-top: 0.2rem;
+            padding-bottom: 0.2rem;
+          }
+          
+          /* Thêm style cho icons */
+          .nav-link i {
+            font-size: 1.2rem; /* Tăng kích thước icon */
+          }
+          
+          .dropdown-item i {
+            font-size: 1.1rem; /* Tăng kích thước icon trong dropdown */
+          }
+          
+          /* Icon giỏ hàng và badge */
+          .nav-link .fa-shopping-cart,
+          .nav-link .fa-sign-in-alt,
+          .nav-link .fa-user-plus {
+            font-size: 1.8rem;
+          }
+          .nav-link .badge {
+            font-size: 0.7rem !important;
+          }
+
+          .custom-footer {
+            padding: 0.5em 0 !important;
+        }
+        
+        
+        </style>
     </head>
+
     <body>
-        <nav class="navbar navbar-expand-lg bg-body-tertiary">
-            <div class="container-fluid">
-              <a class="navbar-brand" href="#">
-              <img src="{% static 'app/images/logopbl.jpg' %}" alt="logo" width="70" height="70">
+        <nav class="navbar navbar-expand-lg bg-body-tertiary sticky-top py-1">
+            <div class="container">
+              <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+                <img src="{% static 'app/images/logopbl.jpg' %}" alt="logo" width="45" height="45" class="me-2">
+                <span class="fw-bold">FastFood</span>
               </a>
-              <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+              <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
                 <span class="navbar-toggler-icon"></span>
               </button>
-              <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              
+              <div class="collapse navbar-collapse" id="navbarContent"> 
+                <ul class="navbar-nav me-auto">
                   <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Trang Chủ</a>
+                    <a class="nav-link" href="{% url 'home' %}">
+                      <i class="fas fa-home me-1"></i>Trang Chủ
+                    </a>
                   </li>
                   <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                     Sản phẩm
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                      <i class="fas fa-utensils me-1"></i>Thực Đơn
                     </a>
                     <ul class="dropdown-menu">
-                      <li><a class="dropdown-item" href="#">sanpham1</a></li>
-                      <li><a class="dropdown-item" href="#">sanpham2</a></li>
-                      <li><hr class="dropdown-divider"></li>
-                      <li><a class="dropdown-item" href="#">Something else here</a></li>
+                      {% for category in categories %}
+                        <li>
+                          <a class="dropdown-item" href="{% url 'home' %}?category={{ category.id }}">
+                            {% if category.category_name == "Đồ ăn nhanh" %}
+                              <i class="fas fa-hamburger me-2"></i>
+                            {% elif category.category_name == "Món chính" %}
+                              <i class="fas fa-utensils me-2"></i>
+                            {% elif category.category_name == "Đồ uống" %}
+                              <i class="fas fa-coffee me-2"></i>
+                            {% elif category.category_name == "Tráng miệng" %}
+                              <i class="fas fa-ice-cream me-2"></i>
+                            {% else %}
+                              <i class="fas fa-cookie-bite me-2"></i>
+                            {% endif %}
+                            {{ category.category_name }}
+                          </a>
+                        </li>
+                      {% endfor %}
                     </ul>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link" href="#">Giới thiệu</a>
-                  </li>
-                  <li class="nav-item">
-                    <a class="nav-link disabled" aria-disabled="true">Liên hệ</a>
+                    <a class="nav-link" href="#about">
+                      <i class="fas fa-info-circle me-1"></i>Giới thiệu
+                    </a>
                   </li>
                 </ul>
-                <form class="d-flex" role="search" action="{% url 'search_products' %}" method="GET">
-                  <input class="form-control me-2" type="search" name="q" placeholder="Tìm kiếm sản phẩm..." value="{{ query|default:'' }}">
-                  <button class="btn btn-outline-success" type="submit">Search</button>
+
+                <form class="d-flex me-2" action="{% url 'search_products' %}" method="GET">
+                  <div class="input-group input-group-sm">
+                    <input class="form-control" type="search" name="q" placeholder="Tìm kiếm..." style="width: 180px">
+                    <button class="btn btn-outline-primary btn-sm" type="submit">
+                      <i class="fas fa-search"></i>
+                    </button>
+                  </div>
                 </form>
-              </div>
-              <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
                 {% if user.is_authenticated %}
-                <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                   {{ user.username }}
+                <div class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                    <i class="fas fa-user me-1"></i>
+                    <span class="d-none d-sm-inline">{{ user.username }}</span>
                   </a>
-                  <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#">Profile</a></li>
-                    <li><a class="dropdown-item" href="#">Đơn hàng</a></li>
-                    <li><a class="dropdown-item" href="{% url 'logout' %}">Đăng xuất</a></li>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'user_profile' %}">
+                      <i class="fas fa-id-card me-2"></i>Tài khoản</a></li>
+                    <li><a class="dropdown-item" href="{% url 'order_history' %}">
+                      <i class="fas fa-history me-2"></i>Đơn hàng</a></li>
+                    <li><a class="dropdown-item" href="{% url 'customer_chat' %}">
+                      <i class="fas fa-comments me-2"></i>Chat</a></li>
+                    {% if user.is_staff %}
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#">Something else here</a></li>
-                  </ul>
-                </li>
-                {% else %}
-                <li class="nav-item">
-                  <a class="nav-link active" aria-current="page" href="{% url 'login' %}">Đăng nhập</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link active" aria-current="page" href="{% url 'register' %}">Đăng kí</a>
-                </li>
-                {% endif %}
-                <li class="nav-item">
-                  <a class="nav-link active position-relative" aria-current="page" href="{% url 'cart'%}" style="min-width: 100px;">
-                    Giỏ hàng
-                    {% if user.is_authenticated %}
-                    <span class="badge bg-danger position-absolute" style="top: 0; right: 0;">
-                        {{ user.order_set.first.get_cart_items|default:"0" }}
-                    </span>
+                    <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}">
+                      <i class="fas fa-cog me-2"></i>Quản lý</a></li>
                     {% endif %}
-                  </a>
-                </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                      <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                  </ul>
+                </div>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-link nav-link me-3">
+                  <i class="fas fa-sign-in-alt"></i>
+                </a>
+                <a href="{% url 'register' %}" class="btn btn-link nav-link me-3">
+                  <i class="fas fa-user-plus"></i>
+                </a>
+                {% endif %}
+
+                <a class="nav-link position-relative" href="{% url 'cart' %}">
+                  <i class="fas fa-shopping-cart"></i>
+                  {% if user.is_authenticated and user.order_set.first.get_cart_items > 0 %}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6em">
+                    {{ user.order_set.first.get_cart_items }}
+                  </span>
+                  {% endif %}
+                </a>
+              </div>
             </div>
           </nav>  
         <!-- main body -->
@@ -98,10 +171,23 @@
         {% block main_content %} {% endblock main_content %}
         {% block cart_content %} {% endblock cart_content %}
         <!-- footer -->
-         <footer>
-          <footer class="container-fluid bg-success text-center fixed-bottom p-2 mt-2">
-            copyright © by Nguyễn Văn Hòa
-        </footer>
+         <!-- footer -->
+         <footer class="custom-footer text-center text-dark py-2 mt-auto">
+
+
+      <div class="container">
+          <div class="d-flex flex-column align-items-center justify-content-center">
+              <p class="mb-1">
+                  <i class="fas fa-heart text-danger me-2"></i>
+                  <strong>FastFood - Luôn đồng hành cùng bạn</strong>
+              </p>
+              <p class="mb-0 small text-muted">
+                  © 2025 - Thiết kế bởi <strong>Nguyễn Văn Hòa</strong>
+              </p>
+          </div>
+      </div>
+    </footer>
+
 
         <script src="" async defer></script>
     </body>

@@ -55,6 +55,9 @@
                         <a href="{% url 'admin_categories' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_categories' %}active{% endif %}">
                             <i class="fas fa-tags me-2"></i> Categories
                         </a>
+                        <a href="{% url 'admin_chat' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_chat' %}active{% endif %}">
+                            <i class="fas fa-comments me-2"></i> Chat
+                        </a>
                     </div>
                     <hr class="bg-light mt-auto">
                     <div class="p-3">
