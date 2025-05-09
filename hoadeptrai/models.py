@@ -57,31 +57,38 @@ class Promotion(models.Model):
 
 # Order Model
 class Order(models.Model):
-    STATUS_CHOICES = (
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    order_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=[
         ('pending', 'Pending'),
         ('processing', 'Processing'),
+        ('paid', 'Paid'),
         ('shipped', 'Shipped'),
         ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled')
-    )
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    order_date = models.DateTimeField(auto_now_add=True)
+    ], default='pending')
+    payment_method = models.CharField(max_length=20, choices=[
+        ('cod', 'Cash on Delivery'),
+        ('zalopay', 'ZaloPay')
+    ], null=True, blank=True)
+    payment_status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed')
+    ], default='pending')
+    shipping_address = models.TextField()
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    shipping_address = models.CharField(max_length=255)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    payment_method = models.CharField(max_length=50, null=True, blank=True)
+    zalopay_trans_id = models.CharField(max_length=100, null=True, blank=True)
     promotion = models.ForeignKey('Promotion', on_delete=models.SET_NULL, null=True, blank=True)
     complete = models.BooleanField(default=False)  # Add this field
 
     @property
     def get_cart_total(self):
-        orderitems = self.orderitem_set.all()
-        return sum([item.get_total for item in orderitems])
+        return sum(item.get_total for item in self.orderitem_set.all())
 
     @property
     def get_cart_items(self):
-        orderitems = self.orderitem_set.all()
-        return sum([item.quantity for item in orderitems])
+        return sum(item.quantity for item in self.orderitem_set.all())
 
     @property
     def is_complete(self):

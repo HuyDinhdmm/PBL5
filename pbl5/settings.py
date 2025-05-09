@@ -10,6 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
+import sys
+
+# Add the project root directory to PYTHONPATH
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -56,7 +62,7 @@ ROOT_URLCONF = 'pbl5.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'hoadeptrai' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -124,7 +130,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -132,3 +141,12 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'hoadeptrai.Customer'
+
+# ZaloPay Settings
+ZALOPAY_SETTINGS = {
+    'APP_ID': '553',  # Thay bằng App ID của bạn
+    'KEY1': '9phuAOYhan4urywHTh0ndEXiV3pKHr5Q',  # Thay bằng Key1 của bạn
+    'KEY2': 'eG4r0GcoNtRGbO8',  # Thay bằng Key2 của bạn
+    'API_URL': 'https://sandbox.zalopay.com.vn/v001/tpe/createorder',
+    'REDIRECT_URL': 'http://127.0.0.1:8000/payment/zalopay-return/'
+}

@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from .models import Customer, Product, Order, OrderItem, Category, Message  # Add Message to imports
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Sum, Count, Q
@@ -10,6 +10,21 @@ from datetime import timedelta
 from django.template.loader import render_to_string
 import random
 import string
+import qrcode
+import io
+import base64
+import logging
+import json
+import time
+import uuid
+import hmac
+import hashlib
+import requests
+from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 def register(request):
     if request.method == 'POST':
@@ -103,34 +118,50 @@ def checkout(request):
         return redirect('login')
 
     customer = Customer.objects.get(id=request.user.id)
-    order, created = Order.objects.get_or_create(
-        customer=customer,
-        status='pending',
-        defaults={
-            'total_amount': 0,
-            'shipping_address': customer.address or ''
-        }
-    )
+    order = Order.objects.filter(customer=customer, status='pending').first()
 
     if request.method == 'POST':
         shipping_address = request.POST.get('shipping_address')
         payment_method = request.POST.get('payment_method')
         
-        if order.orderitem_set.exists():
+        if order and order.orderitem_set.exists():
             order.shipping_address = shipping_address
             order.payment_method = payment_method
             order.status = 'processing'
             order.save()
             
-            messages.success(request, 'Order placed successfully!')
-            return redirect('home')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                if payment_method == 'cod':
+                    messages.success(request, 'Đặt hàng thành công!')
+                    return JsonResponse({
+                        'success': True,
+                        'redirect_url': reverse('home')
+                    })
+                elif payment_method == 'zalopay':
+                    return JsonResponse({
+                        'success': True,
+                        'order_id': order.id
+                    })
+            else:
+                if payment_method == 'cod':
+                    messages.success(request, 'Đặt hàng thành công!')
+                    return redirect('home')
+                elif payment_method == 'zalopay':
+                    return redirect('create_payment', order_id=order.id)
         else:
-            messages.error(request, 'Your cart is empty!')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Giỏ hàng của bạn đang trống!'
+                })
+            else:
+                messages.error(request, 'Giỏ hàng của bạn đang trống!')
 
     context = {
         'order': order,
-        'items': order.orderitem_set.all(),
+        'items': order.orderitem_set.all() if order else [],
         'shipping_address': customer.address,
+        'user': customer,
     }
     return render(request, 'app/checkout.html', context)
 
@@ -660,3 +691,165 @@ def customer_chat_messages(request):
         return JsonResponse({'messages': messages_data})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+def compute_hmac256(key, data):
+    hmac_obj = hmac.new(key.encode('utf-8'), data.encode('utf-8'), hashlib.sha256)
+    return hmac_obj.hexdigest()
+
+@csrf_exempt
+def create_payment(request, order_id):
+    try:
+        order = get_object_or_404(Order, id=order_id)
+        
+        # ZaloPay order creation parameters
+        app_id = settings.ZALOPAY_SETTINGS['APP_ID']
+        key1 = settings.ZALOPAY_SETTINGS['KEY1']
+        app_user = request.user.username
+        app_time = str(int(time.time() * 1000))
+        app_trans_id = time.strftime("%y%m%d_") + str(uuid.uuid4())[:8]
+        amount = str(int(order.total_amount))
+
+        # Prepare embed data and items
+        embed_data = {
+            "merchantinfo": "embeddata123",
+            "promotioninfo": "",
+            "redirecturl": request.build_absolute_uri('/payment/zalopay-return/')
+        }
+        
+        items = [{
+            "itemid": str(item.product.id),
+            "itemname": item.product.product_name,
+            "itemprice": int(item.price),
+            "itemquantity": item.quantity
+        } for item in order.orderitem_set.all()]
+
+        # Convert embed_data and items to JSON strings
+        embed_data_str = json.dumps(embed_data)
+        items_str = json.dumps(items)
+
+        # Create mac string
+        mac_input = f"{app_id}|{app_trans_id}|{app_user}|{amount}|{app_time}|{embed_data_str}|{items_str}"
+        mac = compute_hmac256(key1, mac_input)
+
+        # Prepare order data
+        order_data = {
+            "appid": app_id,
+            "apptransid": app_trans_id,
+            "appuser": app_user,
+            "apptime": app_time,
+            "amount": amount,
+            "embeddata": embed_data_str,
+            "item": items_str,
+            "description": f"Thanh toán đơn hàng #{order.id}",
+            "mac": mac,
+            "bankcode": "zalopayapp"
+        }
+
+        # Make API call to ZaloPay
+        api_url = settings.ZALOPAY_SETTINGS['API_URL']
+        response = requests.post(api_url, data=order_data)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('returncode') == 1:
+                # Update order with ZaloPay transaction ID
+                order.zalopay_trans_id = app_trans_id
+                order.save()
+                
+                return JsonResponse({
+                    'return_code': 1,
+                    'order_url': result.get('orderurl'),
+                    'zptranstoken': result.get('zptranstoken')
+                })
+            else:
+                return JsonResponse({
+                    'return_code': -1,
+                    'return_message': result.get('returnmessage', 'Thanh toán thất bại')
+                })
+        else:
+            return JsonResponse({
+                'return_code': -1,
+                'return_message': f'Lỗi kết nối: {response.status_code}'
+            })
+
+    except Exception as e:
+        logger.error(f"Payment creation error: {str(e)}")
+        return JsonResponse({
+            'return_code': -1,
+            'return_message': 'Lỗi xử lý thanh toán'
+        })
+
+    
+def zalopay_callback(request):
+    if request.method == 'POST':
+        try:
+            # Get callback data from ZaloPay
+            callback_data = json.loads(request.body)
+            data_str = callback_data.get('data')
+            req_mac = callback_data.get('mac')
+
+            # Verify callback authenticity
+            key2 = settings.ZALOPAY_SETTINGS['KEY2']
+            mac = compute_hmac256(key2, data_str)
+
+            if req_mac != mac:
+                logger.error("Invalid callback MAC")
+                return JsonResponse({
+                    "returncode": -1,
+                    "returnmessage": "mac not equal"
+                })
+
+            # Parse transaction data
+            data = json.loads(data_str)
+            app_trans_id = data.get('apptransid')
+            zp_trans_id = data.get('zptransid')
+            channel = data.get('channel')
+            amount = data.get('amount')
+            server_time = data.get('servertime')
+
+            # Update order status
+            try:
+                order = Order.objects.get(zalopay_trans_id=app_trans_id)
+                order.status = 'paid'
+                order.payment_status = 'completed'
+                order.save()
+                
+                logger.info(f"""
+                    Payment Successful:
+                    - Order ID: {order.id}
+                    - ZaloPay Transaction ID: {zp_trans_id}
+                    - Channel: {channel}
+                    - Amount: {amount}
+                    - Time: {server_time}
+                """)
+            except Order.DoesNotExist:
+                logger.error(f"Order not found for ZaloPay transaction: {app_trans_id}")
+
+            return JsonResponse({
+                "returncode": 1,
+                "returnmessage": "success"
+            })
+
+        except Exception as e:
+            logger.error(f"Callback error: {str(e)}")
+            return JsonResponse({
+                "returncode": 0,
+                "returnmessage": str(e)
+            })
+
+    return HttpResponse("Invalid request method", status=405)
+
+def zalopay_return(request):
+    # Handle return from ZaloPay payment
+    trans_id = request.GET.get('apptransid')
+    if trans_id:
+        try:
+            order = Order.objects.get(zalopay_trans_id=trans_id)
+            if order.status == 'paid':
+                messages.success(request, 'Thanh toán thành công!')
+            else:
+                messages.warning(request, 'Đang xử lý thanh toán...')
+            return redirect('order_detail', order_id=order.id)
+        except Order.DoesNotExist:
+            messages.error(request, 'Không tìm thấy đơn hàng!')
+    return redirect('home')

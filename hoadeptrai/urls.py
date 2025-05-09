@@ -31,4 +31,7 @@ urlpatterns = [
     path('customer-chat/', views.customer_chat, name='customer_chat'),
     path('customer-chat/send/', views.customer_chat_send, name='customer_chat_send'),
     path('customer-chat/messages/', views.customer_chat_messages, name='customer_chat_messages'),
+    path('payment/create/<int:order_id>/', views.create_payment, name='create_payment'),
+    path('payment/zalopay-callback/', views.zalopay_callback, name='zalopay_callback'),
+    path('payment/zalopay-return/', views.zalopay_return, name='zalopay_return'),
 ]
