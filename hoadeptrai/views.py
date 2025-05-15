@@ -32,19 +32,38 @@ def register(request):
         email = request.POST.get('email')
         password = request.POST.get('password')
         
+        # Username validation
+        if len(username) < 3:
+            messages.error(request, 'Username must be at least 3 characters long')
+            return redirect('register')
+            
+        if len(username) > 20:
+            messages.error(request, 'Username must not exceed 20 characters')
+            return redirect('register')
+            
+        if not username.replace('_', '').isalnum():
+            messages.error(request, 'Username can only contain letters, numbers and underscore')
+            return redirect('register')
+            
+        # Check if username exists
         if Customer.objects.filter(username=username).exists():
             messages.error(request, 'Username already exists')
             return redirect('register')
             
-        user = Customer.objects.create_user(
-            username=username,
-            email=email,
-            password=password,
-            role='customer'
-        )
-        auth_login(request, user)
-        messages.success(request, 'Registration successful!')
-        return redirect('home')
+        # Create user
+        try:
+            user = Customer.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                role='customer'
+            )
+            auth_login(request, user)
+            messages.success(request, 'Registration successful!')
+            return redirect('home')
+        except Exception as e:
+            messages.error(request, f'Registration failed: {str(e)}')
+            return redirect('register')
         
     return render(request, 'app/register.html')
 

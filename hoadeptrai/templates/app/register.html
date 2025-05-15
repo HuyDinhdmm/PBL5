@@ -212,7 +212,17 @@
                 {% csrf_token %}
                 <div class="input-group">
                     <i>👤</i>
-                    <input type="text" name="username" placeholder="Username" required>
+                    <input type="text" 
+                           name="username" 
+                           class="form-control" 
+                           maxlength="20" 
+                           required
+                           pattern="^[a-zA-Z0-9_]{3,20}$"
+                           title="Username must be between 3-20 characters and can only contain letters, numbers and underscore"
+                           placeholder="Username (3-20 characters)"
+                           oninput="validateUsername(this)"
+                    >
+                    <small id="username-error" class="error-message" style="color: red; display: none;"></small>
                 </div>
                 <div class="input-group">
                     <i>✉️</i>
@@ -245,5 +255,28 @@
             <a href="{% url 'home' %}" class="login-btn" style="text-decoration: none; margin-top: 10px;">Home</a>
         </div>
     </div>
+    <script>
+        function validateUsername(input) {
+            const error = document.getElementById('username-error');
+            const value = input.value;
+            
+            if (value.length > 20) {
+                error.textContent = 'Username must not exceed 20 characters';
+                error.style.display = 'block';
+                input.setCustomValidity('Username too long');
+            } else if (value.length < 3) {
+                error.textContent = 'Username must be at least 3 characters';
+                error.style.display = 'block';
+                input.setCustomValidity('Username too short');
+            } else if (!/^[a-zA-Z0-9_]*$/.test(value)) {
+                error.textContent = 'Username can only contain letters, numbers and underscore';
+                error.style.display = 'block';
+                input.setCustomValidity('Invalid characters');
+            } else {
+                error.style.display = 'none';
+                input.setCustomValidity('');
+            }
+        }
+    </script>
 </body>
 </html>
