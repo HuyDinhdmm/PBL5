@@ -34,20 +34,20 @@ def register(request):
         
         # Username validation
         if len(username) < 3:
-            messages.error(request, 'Username must be at least 3 characters long')
+            messages.error(request, 'Username phải có ít nhất 3 ký tự')
             return redirect('register')
             
         if len(username) > 20:
-            messages.error(request, 'Username must not exceed 20 characters')
+            messages.error(request, 'Username không được vượt quá 20 ký tự')
             return redirect('register')
             
         if not username.replace('_', '').isalnum():
-            messages.error(request, 'Username can only contain letters, numbers and underscore')
+            messages.error(request, 'Username chỉ được chứa chữ cái, số và dấu gạch dưới')
             return redirect('register')
             
         # Check if username exists
         if Customer.objects.filter(username=username).exists():
-            messages.error(request, 'Username already exists')
+            messages.error(request, 'Username này đã được sử dụng, vui lòng chọn username khác')
             return redirect('register')
             
         # Create user
@@ -59,10 +59,10 @@ def register(request):
                 role='customer'
             )
             auth_login(request, user)
-            messages.success(request, 'Registration successful!')
+            messages.success(request, 'Đăng ký thành công!')
             return redirect('home')
         except Exception as e:
-            messages.error(request, f'Registration failed: {str(e)}')
+            messages.error(request, f'Đăng ký thất bại: {str(e)}')
             return redirect('register')
         
     return render(request, 'app/register.html')
@@ -142,6 +142,12 @@ def checkout(request):
     if request.method == 'POST':
         shipping_address = request.POST.get('shipping_address')
         payment_method = request.POST.get('payment_method')
+        phone_number = request.POST.get('phone_number')
+        
+        # Add phone number validation
+        if not phone_number.isdigit() or len(phone_number) != 10:
+            messages.error(request, 'Số điện thoại không hợp lệ')
+            return redirect('checkout')
         
         if not order or not order.orderitem_set.exists():
             message = 'Giỏ hàng của bạn đang trống!'
@@ -153,6 +159,9 @@ def checkout(request):
         try:
             order.shipping_address = shipping_address
             order.payment_method = payment_method
+            # Update customer phone number
+            customer.phone_number = phone_number
+            customer.save()
             order.save()
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

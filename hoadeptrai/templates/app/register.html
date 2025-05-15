@@ -78,6 +78,13 @@
             color: #888;
         }
 
+        .register-button-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
         .register-btn {
             background-color: #FFD700; /* Fast food yellow */
             color: #333;
@@ -89,6 +96,7 @@
             margin-bottom: 20px;
             transition: background-color 0.3s ease;
             font-weight: bold;
+            min-width: 120px;
         }
 
         .register-btn:hover {
@@ -202,13 +210,43 @@
                 padding: 30px;
             }
         }
+
+        .alert {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-message {
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            flex: 1;
+        }
+
+        .messages {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="register-container">
         <div class="left-panel">
             <h2>Join Our Menu</h2>
-            <form method="POST" action="{% url 'register' %}">
+            <form method="POST" action="{% url 'register' %}" class="register-form">
                 {% csrf_token %}
                 <div class="input-group">
                     <i>👤</i>
@@ -218,7 +256,7 @@
                            maxlength="20" 
                            required
                            pattern="^[a-zA-Z0-9_]{3,20}$"
-                           title="Username must be between 3-20 characters and can only contain letters, numbers and underscore"
+                           title="Username must be between 3-20 characters"
                            placeholder="Username (3-20 characters)"
                            oninput="validateUsername(this)"
                     >
@@ -232,7 +270,16 @@
                     <i>🔒</i>
                     <input type="password" name="password" placeholder="Password" required>
                 </div>
-                <button type="submit" class="register-btn">Register</button>
+                <div class="register-button-group">
+                    <button type="submit" class="register-btn">Register</button>
+                    {% if messages %}
+                        {% for message in messages %}
+                        <span class="alert-message {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                            {{ message }}
+                        </span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
             </form>
             <div class="social-register">
                 <p>or register with social platforms</p>
