@@ -83,19 +83,7 @@
                                 </label>
                             </div>
                             <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="payment_method" value="banking" id="bankingPayment">
-                                <label class="form-check-label" for="bankingPayment">
-                                    Chuyển khoản ngân hàng
-                                </label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="payment_method" value="momo" id="momoPayment">
-                                <label class="form-check-label" for="momoPayment">
-                                    Ví MoMo
-                                </label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="payment_method" value="zalo" id="zaloPayment">
+                                <input class="form-check-input" type="radio" name="payment_method" value="zalopay" id="zaloPayment">
                                 <label class="form-check-label" for="zaloPayment">
                                     ZaloPay
                                 </label>
@@ -120,78 +108,43 @@
 
 <script>
 document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
     
     var paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
     var placeOrderBtn = document.getElementById('placeOrderBtn');
-    
-    // Get form data
     var formData = new FormData(this);
     
-    // Disable button and show loading
     placeOrderBtn.disabled = true;
     placeOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
 
-    // Handle different payment methods
-    if (paymentMethod === 'zalo') {
-        // Submit form first to create order
-        fetch("{% url 'checkout' %}", {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Redirect to ZaloPay payment
+    fetch("{% url 'checkout' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Response:', data); // Debug logging
+        if (data.success) {
+            if (paymentMethod === 'zalopay') {
                 window.location.href = `/payment/create/${data.order_id}/`;
-            } else {
-                alert(data.error || 'Có lỗi xảy ra!');
-                placeOrderBtn.disabled = false;
-                placeOrderBtn.innerHTML = 'Đặt hàng<i class="fas fa-arrow-right ms-2"></i>';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Có lỗi xảy ra!');
-            placeOrderBtn.disabled = false;
-            placeOrderBtn.innerHTML = 'Đặt hàng<i class="fas fa-arrow-right ms-2"></i>';
-        });
-    } else if (paymentMethod === 'cod') {
-        // Submit form normally for COD
-        fetch("{% url 'checkout' %}", {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+            } else if (paymentMethod === 'cod') {
                 window.location.href = data.redirect_url;
-            } else {
-                alert(data.error || 'Có lỗi xảy ra!');
-                placeOrderBtn.disabled = false;
-                placeOrderBtn.innerHTML = 'Đặt hàng<i class="fas fa-arrow-right ms-2"></i>';
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Có lỗi xảy ra!');
+        } else {
+            alert(data.error || 'Có lỗi xảy ra!');
             placeOrderBtn.disabled = false;
             placeOrderBtn.innerHTML = 'Đặt hàng<i class="fas fa-arrow-right ms-2"></i>';
-        });
-    }
-});
-
-// Show/hide payment details based on selection
-document.querySelectorAll('input[name="payment_method"]').forEach(function(radio) {
-    radio.addEventListener('change', function() {
-        var paymentMethod = this.value;
-        console.log('Selected payment method:', paymentMethod);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi xử lý thanh toán!');
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.innerHTML = 'Đặt hàng<i class="fas fa-arrow-right ms-2"></i>';
     });
 });
 </script>

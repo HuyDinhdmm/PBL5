@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
-from .models import Customer, Product, Order, OrderItem, Category, Message  # Add Message to imports
+from .models import Customer, Product, Order, OrderItem, Category, Message, Promotion  # Add Promotion to imports
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
@@ -124,15 +124,22 @@ def checkout(request):
         shipping_address = request.POST.get('shipping_address')
         payment_method = request.POST.get('payment_method')
         
-        if order and order.orderitem_set.exists():
+        if not order or not order.orderitem_set.exists():
+            message = 'Giỏ hàng của bạn đang trống!'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': message})
+            messages.error(request, message)
+            return redirect('cart')
+
+        try:
             order.shipping_address = shipping_address
             order.payment_method = payment_method
-            order.status = 'processing'
             order.save()
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 if payment_method == 'cod':
-                    messages.success(request, 'Đặt hàng thành công!')
+                    order.status = 'processing'
+                    order.save()
                     return JsonResponse({
                         'success': True,
                         'redirect_url': reverse('home')
@@ -142,21 +149,12 @@ def checkout(request):
                         'success': True,
                         'order_id': order.id
                     })
-            else:
-                if payment_method == 'cod':
-                    messages.success(request, 'Đặt hàng thành công!')
-                    return redirect('home')
-                elif payment_method == 'zalopay':
-                    return redirect('create_payment', order_id=order.id)
-        else:
+        except Exception as e:
+            logger.error(f"Checkout error: {str(e)}")
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Giỏ hàng của bạn đang trống!'
-                })
-            else:
-                messages.error(request, 'Giỏ hàng của bạn đang trống!')
-
+                return JsonResponse({'success': False, 'error': 'Có lỗi xảy ra trong quá trình xử lý!'})
+            messages.error(request, 'Có lỗi xảy ra trong quá trình xử lý!')
+    
     context = {
         'order': order,
         'items': order.orderitem_set.all() if order else [],
@@ -701,15 +699,34 @@ def create_payment(request, order_id):
     try:
         order = get_object_or_404(Order, id=order_id)
         
+        # Keep validation but don't change status yet
+        if order.status != 'pending':
+            return JsonResponse({
+                'return_code': -1,
+                'return_message': 'Đơn hàng không hợp lệ hoặc đã được xử lý'
+            })
+
+        if order.payment_method != 'zalopay':
+            return JsonResponse({
+                'return_code': -1,
+                'return_message': 'Phương thức thanh toán không hợp lệ'
+            }) 
+
         # ZaloPay order creation parameters
-        app_id = settings.ZALOPAY_SETTINGS['APP_ID']
-        key1 = settings.ZALOPAY_SETTINGS['KEY1']
+        app_id = settings.ZALOPAY_SETTINGS.get('APP_ID')
+        key1 = settings.ZALOPAY_SETTINGS.get('KEY1') 
+        
+        if not all([app_id, key1]):
+            return JsonResponse({
+                'return_code': -1,
+                'return_message': 'Thiếu cấu hình ZaloPay'
+            })
+
         app_user = request.user.username
         app_time = str(int(time.time() * 1000))
         app_trans_id = time.strftime("%y%m%d_") + str(uuid.uuid4())[:8]
         amount = str(int(order.total_amount))
 
-        # Prepare embed data and items
         embed_data = {
             "merchantinfo": "embeddata123",
             "promotioninfo": "",
@@ -723,15 +740,12 @@ def create_payment(request, order_id):
             "itemquantity": item.quantity
         } for item in order.orderitem_set.all()]
 
-        # Convert embed_data and items to JSON strings
         embed_data_str = json.dumps(embed_data)
         items_str = json.dumps(items)
 
-        # Create mac string
         mac_input = f"{app_id}|{app_trans_id}|{app_user}|{amount}|{app_time}|{embed_data_str}|{items_str}"
         mac = compute_hmac256(key1, mac_input)
 
-        # Prepare order data
         order_data = {
             "appid": app_id,
             "apptransid": app_trans_id,
@@ -745,41 +759,59 @@ def create_payment(request, order_id):
             "bankcode": "zalopayapp"
         }
 
-        # Make API call to ZaloPay
         api_url = settings.ZALOPAY_SETTINGS['API_URL']
-        response = requests.post(api_url, data=order_data)
+
+        # Log request data for debugging
+        logger.info(f"ZaloPay Request Data: {order_data}")
         
-        if response.status_code == 200:
-            result = response.json()
-            if result.get('returncode') == 1:
-                # Update order with ZaloPay transaction ID
-                order.zalopay_trans_id = app_trans_id
-                order.save()
-                
-                return JsonResponse({
-                    'return_code': 1,
-                    'order_url': result.get('orderurl'),
-                    'zptranstoken': result.get('zptranstoken')
-                })
-            else:
-                return JsonResponse({
-                    'return_code': -1,
-                    'return_message': result.get('returnmessage', 'Thanh toán thất bại')
-                })
-        else:
+        # Make API call to ZaloPay with timeout
+        try:
+            response = requests.post(api_url, data=order_data, timeout=30)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"ZaloPay API Error: {str(e)}")
             return JsonResponse({
                 'return_code': -1,
-                'return_message': f'Lỗi kết nối: {response.status_code}'
+                'return_message': 'Lỗi kết nối đến cổng thanh toán'
             })
 
-    except Exception as e:
-        logger.error(f"Payment creation error: {str(e)}")
-        return JsonResponse({
-            'return_code': -1,
-            'return_message': 'Lỗi xử lý thanh toán'
-        })
+        result = response.json()
+        logger.info(f"ZaloPay Response: {result}")
 
-    
+        if result.get('returncode') == 1:
+            # Generate QR code
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr.add_data(result.get('orderurl'))
+            qr.make(fit=True)
+            qr_image = qr.make_image(fill_color="black", back_color="white")
+
+            # Convert QR to base64
+            buffered = io.BytesIO()
+            qr_image.save(buffered, format="PNG")
+            qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+
+            # Save transaction ID
+            order.zalopay_trans_id = app_trans_id
+            order.save()
+            
+            return render(request, 'app/zalopay_payment.html', {
+                'order': order,
+                'amount': order.total_amount,
+                'order_url': result.get('orderurl'),
+                'zptranstoken': result.get('zptranstoken'),
+                'order_qr_code': qr_base64,  # Add QR code to context
+                'debug': settings.DEBUG
+            })
+        else:
+            messages.error(request, result.get('returnmessage', 'Thanh toán thất bại'))
+            return redirect('checkout')
+
+    except Exception as e:
+        logger.error(f"Payment creation error: {str(e)}", exc_info=True)
+        messages.error(request, 'Có lỗi xảy ra khi xử lý thanh toán')
+        return redirect('checkout')
+
+@csrf_exempt
 def zalopay_callback(request):
     if request.method == 'POST':
         try:
@@ -802,26 +834,22 @@ def zalopay_callback(request):
             # Parse transaction data
             data = json.loads(data_str)
             app_trans_id = data.get('apptransid')
-            zp_trans_id = data.get('zptransid')
-            channel = data.get('channel')
-            amount = data.get('amount')
-            server_time = data.get('servertime')
+            status = int(data.get('status', 0))  # Add status check
 
-            # Update order status
+            # Update order status only if payment is successful
             try:
                 order = Order.objects.get(zalopay_trans_id=app_trans_id)
-                order.status = 'paid'
-                order.payment_status = 'completed'
+                if status == 1:  # Payment successful
+                    order.status = 'processing'  # Now we change status
+                    order.payment_status = 'completed'
+                    messages.success(request, 'Thanh toán thành công!')
+                else:  # Payment failed
+                    order.payment_status = 'failed'
+                    messages.error(request, 'Thanh toán thất bại!')
                 order.save()
                 
-                logger.info(f"""
-                    Payment Successful:
-                    - Order ID: {order.id}
-                    - ZaloPay Transaction ID: {zp_trans_id}
-                    - Channel: {channel}
-                    - Amount: {amount}
-                    - Time: {server_time}
-                """)
+                logger.info(f"Payment Status Updated: Order #{order.id} - Status: {status}")
+                
             except Order.DoesNotExist:
                 logger.error(f"Order not found for ZaloPay transaction: {app_trans_id}")
 
@@ -853,3 +881,66 @@ def zalopay_return(request):
         except Order.DoesNotExist:
             messages.error(request, 'Không tìm thấy đơn hàng!')
     return redirect('home')
+
+def apply_promotion(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Vui lòng đăng nhập!'})
+        
+    if request.method == 'POST':
+        code = request.POST.get('promotion_code')
+        try:
+            promotion = Promotion.objects.get(
+                promotion_code=code,
+                start_date__lte=timezone.now(),
+                end_date__gte=timezone.now(),
+                is_active=True
+            )
+            
+            # Get current cart
+            order = Order.objects.get(customer=request.user, status='pending')
+            cart_total = order.get_cart_total
+
+            # Check minimum order value
+            if promotion.min_order_value and cart_total < promotion.min_order_value:
+                return JsonResponse({
+                    'success': False, 
+                    'error': f'Đơn hàng tối thiểu {int(promotion.min_order_value)}đ'
+                })
+
+            # Calculate discount
+            if promotion.discount_type == 'percent':
+                discount = cart_total * (promotion.discount_value / 100)
+                if promotion.max_discount_amount:
+                    discount = min(discount, promotion.max_discount_amount)
+            else:
+                discount = promotion.discount_value
+
+            # Update order
+            order.promotion = promotion
+            order.save()
+
+            new_total = cart_total - discount
+            
+            return JsonResponse({
+                'success': True,
+                'discount_amount': int(discount),
+                'new_total': int(new_total),
+                'discount_value': (
+                    f"{int(promotion.discount_value)}%" 
+                    if promotion.discount_type == 'percent' 
+                    else f"{int(promotion.discount_value)}đ"
+                )
+            })
+
+        except Promotion.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Mã giảm giá không hợp lệ!'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': 'Có lỗi xảy ra!'
+            })
+            
+    return JsonResponse({'success': False, 'error': 'Invalid request'})

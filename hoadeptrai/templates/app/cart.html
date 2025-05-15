@@ -91,10 +91,18 @@
                                             <i class="fas fa-tag me-2 text-primary"></i>Mã giảm giá
                                         </h5>
                                         <p class="text-muted small mb-3">Nhập mã giảm giá nếu bạn có</p>
-                                        <div class="input-group">
-                                            <input type="text" id="Discount" class="form-control rounded-start-pill" placeholder="Nhập mã giảm giá">
-                                            <button class="btn btn-primary rounded-end-pill px-4" type="button">Áp dụng</button>
+                                        {% csrf_token %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" id="promotionCode" 
+                                                   class="form-control rounded-start-pill" 
+                                                   placeholder="Nhập mã giảm giá">
+                                            <button class="btn btn-primary rounded-end-pill px-4" 
+                                                    type="button" 
+                                                    id="applyPromotion">
+                                                Áp dụng
+                                            </button>
                                         </div>
+                                        <div id="promotionMessage" class="small"></div>
                                     </div>
                                 </div>
                             </div>
@@ -110,7 +118,9 @@
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <span class="text-muted">Giảm giá:</span>
-                                            <span class="fw-bold text-danger">0đ</span>
+                                            <span id="discountAmount" class="fw-bold text-danger">
+                                                {{ order.get_discount_amount|default:"-0" }}đ
+                                            </span>
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <span class="text-muted">Phí vận chuyển:</span>
