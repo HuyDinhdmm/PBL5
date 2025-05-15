@@ -264,7 +264,13 @@
                 </div>
                 <div class="input-group">
                     <i>✉️</i>
-                    <input type="email" name="email" placeholder="Email" required>
+                    <input type="email" 
+                           name="email" 
+                           placeholder="Email" 
+                           required
+                           oninput="validateEmail(this)"
+                    >
+                    <small id="email-error" class="error-message" style="color: red; display: none;"></small>
                 </div>
                 <div class="input-group">
                     <i>🔒</i>
@@ -319,6 +325,20 @@
                 error.textContent = 'Username can only contain letters, numbers and underscore';
                 error.style.display = 'block';
                 input.setCustomValidity('Invalid characters');
+            } else {
+                error.style.display = 'none';
+                input.setCustomValidity('');
+            }
+        }
+
+        function validateEmail(input) {
+            const error = document.getElementById('email-error');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (!emailRegex.test(input.value)) {
+                error.textContent = 'Email không hợp lệ';
+                error.style.display = 'block';
+                input.setCustomValidity('Email không hợp lệ');
             } else {
                 error.style.display = 'none';
                 input.setCustomValidity('');

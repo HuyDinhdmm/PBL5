@@ -47,7 +47,12 @@ def register(request):
             
         # Check if username exists
         if Customer.objects.filter(username=username).exists():
-            messages.error(request, 'Username này đã được sử dụng, vui lòng chọn username khác')
+            messages.error(request, 'Username này đã được sử dụng')
+            return redirect('register')
+        
+        # Check if email exists
+        if Customer.objects.filter(email=email).exists():
+            messages.error(request, 'Email này đã được sử dụng')
             return redirect('register')
             
         # Create user
