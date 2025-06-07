@@ -1,0 +1,116 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Quản lý mã giảm giá</h2>
+        <a href="{% url 'create_promotion' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Thêm mã giảm giá mới
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Mã giảm giá</th>
+                            <th>Loại giảm giá</th>
+                            <th>Giá trị</th>
+                            <th>Điều kiện</th>
+                            <th>Thời gian</th>
+                            <th>Đã sử dụng</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for promo in promotions %}
+                        <tr>
+                            <td>
+                                <strong>{{ promo.promotion_code }}</strong>
+                                {% if promo.description %}
+                                <br>
+                                <small class="text-muted">{{ promo.description }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ promo.get_discount_type_display }}</td>
+                            <td>
+                                {% if promo.discount_type == 'percent' %}
+                                    {{ promo.discount_value }}%
+                                    {% if promo.max_discount_amount %}
+                                    <br><small class="text-muted">Tối đa {{ promo.max_discount_amount }}đ</small>
+                                    {% endif %}
+                                {% else %}
+                                    {{ promo.discount_value }}đ
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if promo.min_order_value %}
+                                <span class="text-muted">
+                                    Đơn tối thiểu {{ promo.min_order_value }}đ
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>Từ: {{ promo.start_date|date:"d/m/Y H:i" }}</div>
+                                <div>Đến: {{ promo.end_date|date:"d/m/Y H:i" }}</div>
+                            </td>
+                            <td>
+                                {% if promo.usage_limit %}
+                                    <span class="{% if promo.usage_count >= promo.usage_limit %}text-danger{% endif %}">
+                                        {{ promo.usage_count }}/{{ promo.usage_limit }}
+                                    </span>
+                                {% else %}
+                                    {{ promo.usage_count }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if promo.is_valid %}
+                                    <span class="badge bg-success">Còn hiệu lực</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Hết hiệu lực</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'edit_promotion' promo.id %}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="deletePromotion({{ promo.id }})"
+                                            title="Xóa">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-ticket-alt fa-3x mb-3"></i>
+                                    <p>Chưa có mã giảm giá nào</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deletePromotion(id) {
+    if (confirm('Bạn có chắc chắn muốn xóa mã giảm giá này?')) {
+        window.location.href = `/admin-promotions/delete/${id}/`;
+    }
+}
+</script>
+{% endblock %}

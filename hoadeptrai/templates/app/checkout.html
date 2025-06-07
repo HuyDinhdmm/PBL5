@@ -61,16 +61,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Số điện thoại</label>
-                                <input type="tel" 
-                                       class="form-control" 
-                                       name="phone_number"
-                                       value="{{ user.phone_number }}" 
-                                       pattern="[0-9]{10}"
-                                       title="Vui lòng nhập 10 chữ số"
-                                       maxlength="10"
-                                       oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                                       required>
-                                <small class="text-muted">Chỉ nhập số, tối đa 10 chữ số</small>
+                                <input type="tel" class="form-control" value="{{ user.phone_number }}" required>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Email</label>
@@ -97,6 +88,46 @@
                                     ZaloPay
                                 </label>
                             </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="payment_method" value="bank" id="bankPayment">
+                                <label class="form-check-label" for="bankPayment">
+                                    Chuyển khoản ngân hàng
+                                </label>
+                            </div>
+                            
+                            <!-- Bank Transfer Info -->
+                            <div id="bankInfo" class="mt-3 p-3 border rounded" style="display: none;">
+                                <h6 class="mb-3">Thông tin chuyển khoản</h6>
+                                <div class="row">
+                                    <!-- BIDV Info -->
+                                    <div class="col-md-6 mb-3">
+                                        <div class="p-3 border rounded">
+                                            <img src="{% static 'app/images/BIDV_Logo.png' %}" alt="BIDV" height="30">
+                                            <p class="mt-2 mb-1">Ngân hàng BIDV</p>
+                                            <p class="mb-1"><strong>NGUYEN VAN HOA</strong></p>
+                                            <p class="mb-1">STK: 5602001551</p>
+                                            <p class="mb-2">Chi nhánh: HAI VAN</p>
+                                            <img src="{% static 'app/images/bank_qr.jpg' %}" alt="QR Code BIDV" height="150" class="rounded">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- MB Bank Info -->
+                                    <div class="col-md-6 mb-3">
+                                        <div class="p-3 border rounded">
+                                            <img src="{% static 'app/images/MB_Logo.png' %}" alt="MB Bank" height="30">
+                                            <p class="mt-2 mb-1">Ngân hàng MB Bank</p>
+                                            <p class="mb-1"><strong>NGUYEN VAN HOA</strong></p>
+                                            <p class="mb-1">STK: 0987321134</p>
+                                            <p class="mb-2">Chi nhánh: DA NANG</p>
+                                            <img src="{% static 'app/images/mb_qr.jpg' %}" alt="QR Code MB" height="150" class="rounded">
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="mt-2 mb-0 text-center text-danger">
+                                    <i class="fas fa-info-circle"></i>
+                                    Nội dung chuyển khoản: <strong>DH{{ order.id }}</strong>
+                                </p>
+                            </div>
                         </div>
 
                         <!-- Actions -->
@@ -116,6 +147,18 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bankInfo = document.getElementById('bankInfo');
+    const paymentMethods = document.getElementsByName('payment_method');
+    
+    // Show/hide bank info based on payment method selection
+    paymentMethods.forEach(method => {
+        method.addEventListener('change', function() {
+            bankInfo.style.display = this.value === 'bank' ? 'block' : 'none';
+        });
+    });
+});
+
 document.getElementById('checkoutForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -136,12 +179,14 @@ document.getElementById('checkoutForm').addEventListener('submit', function(e) {
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Response:', data); // Debug logging
+        console.log('Response:', data);
         if (data.success) {
             if (paymentMethod === 'zalopay') {
                 window.location.href = `/payment/create/${data.order_id}/`;
-            } else if (paymentMethod === 'cod') {
+            } else if (paymentMethod === 'bank') {
                 window.location.href = data.redirect_url;
+            } else if (paymentMethod === 'cod') {
+                window.location.href = data.redirect_url; 
             }
         } else {
             alert(data.error || 'Có lỗi xảy ra!');
@@ -155,23 +200,6 @@ document.getElementById('checkoutForm').addEventListener('submit', function(e) {
         placeOrderBtn.disabled = false;
         placeOrderBtn.innerHTML = 'Đặt hàng<i class="fas fa-arrow-right ms-2"></i>';
     });
-});
-
-// Add this to your existing JavaScript
-function validatePhoneNumber(input) {
-    // Remove any non-digit characters
-    input.value = input.value.replace(/\D/g, '');
-    
-    // Check if length is exactly 10 digits
-    if (input.value.length !== 10) {
-        input.setCustomValidity('Số điện thoại phải có 10 chữ số');
-    } else {
-        input.setCustomValidity('');
-    }
-}
-
-document.querySelector('input[name="phone_number"]').addEventListener('input', function() {
-    validatePhoneNumber(this);
 });
 </script>
 {% endblock main_content %}

@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.utils import timezone
 
 # Custom User Model
 class Customer(AbstractUser):
@@ -41,19 +42,38 @@ class Product(models.Model):
 # Promotion Model
 class Promotion(models.Model):
     DISCOUNT_TYPE_CHOICES = [
-        ('percent', 'Percent'),
-        ('amount', 'Amount')
+        ('percent', 'Phần trăm'),
+        ('amount', 'Số tiền cố định')
     ]
-    promotion_code = models.CharField(max_length=50, unique=True)
+    promotion_code = models.CharField(max_length=20, unique=True)
+    description = models.TextField(blank=True, default='')  # Changed: added default=''
     discount_type = models.CharField(max_length=10, choices=DISCOUNT_TYPE_CHOICES)
     discount_value = models.DecimalField(max_digits=10, decimal_places=2)
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
     min_order_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     max_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
     usage_limit = models.IntegerField(null=True, blank=True)
+    usage_count = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
-    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'hoadeptrai_promotion'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.promotion_code
+
+    @property 
+    def is_valid(self):
+        now = timezone.now()
+        if not self.is_active:
+            return False
+        if self.usage_limit and self.usage_count >= self.usage_limit:
+            return False
+        return self.start_date <= now <= self.end_date
 
 # Order Model
 class Order(models.Model):
@@ -69,7 +89,8 @@ class Order(models.Model):
     ], default='pending')
     payment_method = models.CharField(max_length=20, choices=[
         ('cod', 'Cash on Delivery'),
-        ('zalopay', 'ZaloPay')
+        ('zalopay', 'ZaloPay'),
+        ('bank', 'Bank Transfer')  # Add this line
     ], null=True, blank=True)
     payment_status = models.CharField(max_length=20, choices=[
         ('pending', 'Pending'),
@@ -82,9 +103,26 @@ class Order(models.Model):
     promotion = models.ForeignKey('Promotion', on_delete=models.SET_NULL, null=True, blank=True)
     complete = models.BooleanField(default=False)  # Add this field
 
+    @property 
+    def get_discount_amount(self):
+        if not self.promotion:
+            return 0
+            
+        subtotal = sum(item.get_total for item in self.orderitem_set.all())
+        
+        if self.promotion.discount_type == 'percent':
+            discount = subtotal * (self.promotion.discount_value / 100)
+            if self.promotion.max_discount_amount:
+                discount = min(discount, self.promotion.max_discount_amount)
+        else:
+            discount = self.promotion.discount_value
+            
+        return discount
+
     @property
     def get_cart_total(self):
-        return sum(item.get_total for item in self.orderitem_set.all())
+        subtotal = sum(item.get_total for item in self.orderitem_set.all())
+        return subtotal - self.get_discount_amount
 
     @property
     def get_cart_items(self):

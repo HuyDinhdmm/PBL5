@@ -55,6 +55,9 @@
                         <a href="{% url 'admin_categories' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_categories' %}active{% endif %}">
                             <i class="fas fa-tags me-2"></i> Categories
                         </a>
+                        <a href="{% url 'admin_promotions' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_promotions' %}active{% endif %}">
+                            <i class="fas fa-percent me-2"></i> Khuyến mãi
+                        </a>
                         <a href="{% url 'admin_chat' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_chat' %}active{% endif %}">
                             <i class="fas fa-comments me-2"></i> Chat
                         </a>

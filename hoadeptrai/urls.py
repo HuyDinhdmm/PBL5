@@ -34,5 +34,10 @@ urlpatterns = [
     path('payment/create/<int:order_id>/', views.create_payment, name='create_payment'),
     path('payment/zalopay-callback/', views.zalopay_callback, name='zalopay_callback'),
     path('payment/zalopay-return/', views.zalopay_return, name='zalopay_return'),
+    path('payment/bank-transfer/<int:order_id>/', views.bank_transfer, name='bank_transfer'),
     path('apply-promotion/', views.apply_promotion, name='apply_promotion'),
+    path('admin-promotions/', views.admin_promotions, name='admin_promotions'),
+    path('admin-promotions/create/', views.create_promotion, name='create_promotion'),
+    path('admin-promotions/edit/<int:promotion_id>/', views.edit_promotion, name='edit_promotion'),
+    path('admin-promotions/delete/<int:promotion_id>/', views.delete_promotion, name='delete_promotion'),
 ]

@@ -78,13 +78,6 @@
             color: #888;
         }
 
-        .register-button-group {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
         .register-btn {
             background-color: #FFD700; /* Fast food yellow */
             color: #333;
@@ -96,7 +89,6 @@
             margin-bottom: 20px;
             transition: background-color 0.3s ease;
             font-weight: bold;
-            min-width: 120px;
         }
 
         .register-btn:hover {
@@ -210,82 +202,27 @@
                 padding: 30px;
             }
         }
-
-        .alert {
-            padding: 10px 15px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .alert-error {
-            color: #721c24;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-        }
-
-        .alert-success {
-            color: #155724;
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-message {
-            font-size: 14px;
-            padding: 8px 12px;
-            border-radius: 4px;
-            flex: 1;
-        }
-
-        .messages {
-            display: none;
-        }
     </style>
 </head>
 <body>
     <div class="register-container">
         <div class="left-panel">
             <h2>Join Our Menu</h2>
-            <form method="POST" action="{% url 'register' %}" class="register-form">
+            <form method="POST" action="{% url 'register' %}">
                 {% csrf_token %}
                 <div class="input-group">
                     <i>👤</i>
-                    <input type="text" 
-                           name="username" 
-                           class="form-control" 
-                           maxlength="20" 
-                           required
-                           pattern="^[a-zA-Z0-9_]{3,20}$"
-                           title="Username must be between 3-20 characters"
-                           placeholder="Username (3-20 characters)"
-                           oninput="validateUsername(this)"
-                    >
-                    <small id="username-error" class="error-message" style="color: red; display: none;"></small>
+                    <input type="text" name="username" placeholder="Username" required>
                 </div>
                 <div class="input-group">
                     <i>✉️</i>
-                    <input type="email" 
-                           name="email" 
-                           placeholder="Email" 
-                           required
-                           oninput="validateEmail(this)"
-                    >
-                    <small id="email-error" class="error-message" style="color: red; display: none;"></small>
+                    <input type="email" name="email" placeholder="Email" required>
                 </div>
                 <div class="input-group">
                     <i>🔒</i>
                     <input type="password" name="password" placeholder="Password" required>
                 </div>
-                <div class="register-button-group">
-                    <button type="submit" class="register-btn">Register</button>
-                    {% if messages %}
-                        {% for message in messages %}
-                        <span class="alert-message {% if message.tags %}alert-{{ message.tags }}{% endif %}">
-                            {{ message }}
-                        </span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
+                <button type="submit" class="register-btn">Register</button>
             </form>
             <div class="social-register">
                 <p>or register with social platforms</p>
@@ -308,42 +245,5 @@
             <a href="{% url 'home' %}" class="login-btn" style="text-decoration: none; margin-top: 10px;">Home</a>
         </div>
     </div>
-    <script>
-        function validateUsername(input) {
-            const error = document.getElementById('username-error');
-            const value = input.value;
-            
-            if (value.length > 20) {
-                error.textContent = 'Username must not exceed 20 characters';
-                error.style.display = 'block';
-                input.setCustomValidity('Username too long');
-            } else if (value.length < 3) {
-                error.textContent = 'Username must be at least 3 characters';
-                error.style.display = 'block';
-                input.setCustomValidity('Username too short');
-            } else if (!/^[a-zA-Z0-9_]*$/.test(value)) {
-                error.textContent = 'Username can only contain letters, numbers and underscore';
-                error.style.display = 'block';
-                input.setCustomValidity('Invalid characters');
-            } else {
-                error.style.display = 'none';
-                input.setCustomValidity('');
-            }
-        }
-
-        function validateEmail(input) {
-            const error = document.getElementById('email-error');
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            
-            if (!emailRegex.test(input.value)) {
-                error.textContent = 'Email không hợp lệ';
-                error.style.display = 'block';
-                input.setCustomValidity('Email không hợp lệ');
-            } else {
-                error.style.display = 'none';
-                input.setCustomValidity('');
-            }
-        }
-    </script>
 </body>
 </html>
