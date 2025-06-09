@@ -43,10 +43,7 @@
                             <td>{{ order.order_date|date:"d/m/Y H:i" }}</td>
                             <td>
                                 <button class="btn btn-sm btn-info view-order" data-bs-toggle="modal" data-bs-target="#orderDetailModal" data-order-id="{{ order.id }}">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger delete-order" data-bs-toggle="modal" data-bs-target="#deleteOrderModal" data-order-id="{{ order.id }}" data-order-number="#{{ order.id }}">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="fas fa-eye"></i> View
                                 </button>
                             </td>
                         </tr>
@@ -61,54 +58,27 @@
 <!-- Include Order Detail Modal -->
 {% include 'admin/partials/order_detail_modal.html' %}
 
-<!-- Delete Order Modal -->
-<div class="modal fade" id="deleteOrderModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Delete Order</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete order <span id="deleteOrderNumber"></span>?</p>
-                <p class="text-danger">This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="#" id="confirmDelete" class="btn btn-danger">Delete</a>
-            </div>
-        </div>
-    </div>
-</div>
-
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    $('.delete-order').click(function() {
-        var orderId = $(this).data('order-id');
-        var orderNumber = $(this).data('order-number');
-        $('#deleteOrderNumber').text(orderNumber);
-        $('#confirmDelete').attr('href', `/admin-orders/delete/${orderId}/`);
-    });
-
     $('.view-order').click(function() {
         var orderId = $(this).data('order-id');
-        $('#updateOrderId').val(orderId);
         
         $.get(`/admin-orders/detail/${orderId}/`, function(data) {
             // Update order info
-            $('#orderId').text('#' + data.order_id);
+            $('#orderIdTitle').text(data.order_id);
+            $('#orderNumber').text('#' + data.order_id);
             $('#orderDate').text(data.date);
             $('#orderStatus')
                 .text(data.status)
                 .removeClass()
                 .addClass('badge ' + getStatusClass(data.status));
-            $('#paymentMethod').text(data.payment_method || 'Not specified');
+            $('#paymentMethod').text(data.payment_method || 'Không xác định');
             
             // Update customer info
             $('#customerName').text(data.customer.name);
             $('#customerEmail').text(data.customer.email);
-            $('#customerPhone').text(data.customer.phone || 'Not provided');
+            $('#customerPhone').text(data.customer.phone || 'Chưa cập nhật');
             $('#shippingAddress').text(data.shipping_address);
             
             // Update items table
@@ -130,18 +100,52 @@ $(document).ready(function() {
                             </div>
                         </td>
                         <td class="text-center">${item.quantity}</td>
-                        <td class="text-end">${item.price}đ</td>
-                        <td class="text-end">${item.total}đ</td>
+                        <td class="text-end">${item.price.toLocaleString()}đ</td>
+                        <td class="text-end">${item.total.toLocaleString()}đ</td>
                     </tr>
                 `);
             });
             
-            // Update totals
-            $('#subtotal').text(data.total + 'đ');
-            $('#orderTotal').text(data.total + 'đ');
+            // Update totals and discount
+            $('#subtotal').text(data.subtotal.toLocaleString() + 'đ');
             
-            // Update status dropdown
+            if (data.promotion.code) {
+                $('#discountRow').show();
+                let discountText = data.promotion.discount_type === 'Percent' 
+                    ? `${data.promotion.discount_value}%`
+                    : data.promotion.discount_value.toLocaleString() + 'đ';
+                $('#promotionCode').text(`(Mã: ${data.promotion.code} - ${discountText})`);
+                $('#discountAmount').text('-' + data.discount.toLocaleString() + 'đ');
+            } else {
+                $('#discountRow').hide();
+            }
+            
+            $('#orderTotal').text(data.total.toLocaleString() + 'đ');
+            
+            // Update status dropdown value
             $('select[name="status"]').val(data.status);
+            $('#updateOrderId').val(data.order_id);
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            console.error('Error fetching order details:', errorThrown);
+            alert('Error loading order details. Please try again.');
+        });
+    });
+
+    // Handle form submission
+    $('#orderDetailModal form').on('submit', function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: '/admin-orders/',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                // Reload the page to show updated status
+                location.reload();
+            },
+            error: function(xhr) {
+                alert('Error updating order status. Please try again.');
+            }
         });
     });
 

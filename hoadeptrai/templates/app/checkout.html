@@ -21,23 +21,32 @@
                     </div>
                     {% endfor %}
                     
-                    <hr>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Tạm tính</span>
-                        <strong>{{ order.get_cart_total }}đ</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Phí vận chuyển</span>
-                        <strong>0đ</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Giảm giá</span>
-                        <strong class="text-danger">-0đ</strong>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between mb-2">
-                        <h5>Tổng cộng</h5>
-                        <h5 class="text-primary">{{ order.get_cart_total }}đ</h5>
+                    <div class="order-summary">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted">Tạm tính:</span>
+                            <span class="fw-bold">{{ order.get_cart_total_display }}đ</span>
+                        </div>
+
+                        {% if order.promotion %}
+                        <div class="d-flex justify-content-between align-items-center mb-3" id="discountRow">
+                            <span class="text-muted">
+                                Giảm giá:
+                                <small class="text-success">({{ order.promotion.promotion_code }})</small>
+                            </span>
+                            <span class="text-danger">-{{ order.get_discount_amount_display }}đ</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted">Phí vận chuyển:</span>
+                            <span class="text-success">Miễn phí</span>
+                        </div>
+                        
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <span class="h5 mb-0">Tổng cộng:</span>
+                            <span class="h4 mb-0 text-primary fw-bold">{{ order.get_final_total_display }}đ</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -88,46 +97,6 @@
                                     ZaloPay
                                 </label>
                             </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="payment_method" value="bank" id="bankPayment">
-                                <label class="form-check-label" for="bankPayment">
-                                    Chuyển khoản ngân hàng
-                                </label>
-                            </div>
-                            
-                            <!-- Bank Transfer Info -->
-                            <div id="bankInfo" class="mt-3 p-3 border rounded" style="display: none;">
-                                <h6 class="mb-3">Thông tin chuyển khoản</h6>
-                                <div class="row">
-                                    <!-- BIDV Info -->
-                                    <div class="col-md-6 mb-3">
-                                        <div class="p-3 border rounded">
-                                            <img src="{% static 'app/images/BIDV_Logo.png' %}" alt="BIDV" height="30">
-                                            <p class="mt-2 mb-1">Ngân hàng BIDV</p>
-                                            <p class="mb-1"><strong>NGUYEN VAN HOA</strong></p>
-                                            <p class="mb-1">STK: 5602001551</p>
-                                            <p class="mb-2">Chi nhánh: HAI VAN</p>
-                                            <img src="{% static 'app/images/bank_qr.jpg' %}" alt="QR Code BIDV" height="150" class="rounded">
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- MB Bank Info -->
-                                    <div class="col-md-6 mb-3">
-                                        <div class="p-3 border rounded">
-                                            <img src="{% static 'app/images/MB_Logo.png' %}" alt="MB Bank" height="30">
-                                            <p class="mt-2 mb-1">Ngân hàng MB Bank</p>
-                                            <p class="mb-1"><strong>NGUYEN VAN HOA</strong></p>
-                                            <p class="mb-1">STK: 0987321134</p>
-                                            <p class="mb-2">Chi nhánh: DA NANG</p>
-                                            <img src="{% static 'app/images/mb_qr.jpg' %}" alt="QR Code MB" height="150" class="rounded">
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="mt-2 mb-0 text-center text-danger">
-                                    <i class="fas fa-info-circle"></i>
-                                    Nội dung chuyển khoản: <strong>DH{{ order.id }}</strong>
-                                </p>
-                            </div>
                         </div>
 
                         <!-- Actions -->
@@ -147,18 +116,6 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const bankInfo = document.getElementById('bankInfo');
-    const paymentMethods = document.getElementsByName('payment_method');
-    
-    // Show/hide bank info based on payment method selection
-    paymentMethods.forEach(method => {
-        method.addEventListener('change', function() {
-            bankInfo.style.display = this.value === 'bank' ? 'block' : 'none';
-        });
-    });
-});
-
 document.getElementById('checkoutForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -179,14 +136,12 @@ document.getElementById('checkoutForm').addEventListener('submit', function(e) {
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Response:', data);
+        console.log('Response:', data); // Debug logging
         if (data.success) {
             if (paymentMethod === 'zalopay') {
                 window.location.href = `/payment/create/${data.order_id}/`;
-            } else if (paymentMethod === 'bank') {
-                window.location.href = data.redirect_url;
             } else if (paymentMethod === 'cod') {
-                window.location.href = data.redirect_url; 
+                window.location.href = data.redirect_url;
             }
         } else {
             alert(data.error || 'Có lỗi xảy ra!');

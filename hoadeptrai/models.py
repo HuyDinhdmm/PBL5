@@ -42,38 +42,44 @@ class Product(models.Model):
 # Promotion Model
 class Promotion(models.Model):
     DISCOUNT_TYPE_CHOICES = [
-        ('percent', 'Phần trăm'),
-        ('amount', 'Số tiền cố định')
+        ('percent', 'Percent'),
+        ('amount', 'Amount')
     ]
-    promotion_code = models.CharField(max_length=20, unique=True)
-    description = models.TextField(blank=True, default='')  # Changed: added default=''
+    promotion_code = models.CharField(max_length=50, unique=True)
     discount_type = models.CharField(max_length=10, choices=DISCOUNT_TYPE_CHOICES)
     discount_value = models.DecimalField(max_digits=10, decimal_places=2)
-    min_order_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    max_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
+    min_order_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    max_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     usage_limit = models.IntegerField(null=True, blank=True)
-    usage_count = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    description = models.TextField(blank=True, null=True)
 
-    class Meta:
-        db_table = 'hoadeptrai_promotion'
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return self.promotion_code
-
-    @property 
+    @property
     def is_valid(self):
         now = timezone.now()
-        if not self.is_active:
-            return False
-        if self.usage_limit and self.usage_count >= self.usage_limit:
-            return False
-        return self.start_date <= now <= self.end_date
+        return (
+            self.is_active and
+            self.start_date <= now and
+            self.end_date >= now and
+            (not self.usage_limit or 
+             Order.objects.filter(
+                 promotion=self,
+                 status__in=['processing', 'paid', 'shipped', 'delivered']
+             ).count() < self.usage_limit
+            )
+        )
+
+    @property
+    def remaining_uses(self):
+        if not self.usage_limit:
+            return None
+        used = Order.objects.filter(
+            promotion=self,
+            status__in=['processing', 'paid', 'shipped', 'delivered']
+        ).count()
+        return max(0, self.usage_limit - used)
 
 # Order Model
 class Order(models.Model):
@@ -89,8 +95,7 @@ class Order(models.Model):
     ], default='pending')
     payment_method = models.CharField(max_length=20, choices=[
         ('cod', 'Cash on Delivery'),
-        ('zalopay', 'ZaloPay'),
-        ('bank', 'Bank Transfer')  # Add this line
+        ('zalopay', 'ZaloPay')
     ], null=True, blank=True)
     payment_status = models.CharField(max_length=20, choices=[
         ('pending', 'Pending'),
@@ -103,26 +108,9 @@ class Order(models.Model):
     promotion = models.ForeignKey('Promotion', on_delete=models.SET_NULL, null=True, blank=True)
     complete = models.BooleanField(default=False)  # Add this field
 
-    @property 
-    def get_discount_amount(self):
-        if not self.promotion:
-            return 0
-            
-        subtotal = sum(item.get_total for item in self.orderitem_set.all())
-        
-        if self.promotion.discount_type == 'percent':
-            discount = subtotal * (self.promotion.discount_value / 100)
-            if self.promotion.max_discount_amount:
-                discount = min(discount, self.promotion.max_discount_amount)
-        else:
-            discount = self.promotion.discount_value
-            
-        return discount
-
     @property
     def get_cart_total(self):
-        subtotal = sum(item.get_total for item in self.orderitem_set.all())
-        return subtotal - self.get_discount_amount
+        return sum(item.get_total for item in self.orderitem_set.all())
 
     @property
     def get_cart_items(self):
@@ -135,6 +123,32 @@ class Order(models.Model):
     @property
     def is_cart(self):
         return self.status == 'pending'
+
+    @property
+    def get_discount_amount(self):
+        if not self.promotion:
+            return 0
+            
+        if self.promotion.discount_type == 'percent':
+            discount = self.get_cart_total * (self.promotion.discount_value / 100)
+            if self.promotion.max_discount_amount:
+                discount = min(discount, self.promotion.max_discount_amount)
+        else:
+            discount = min(self.promotion.discount_value, self.get_cart_total)
+        return round(discount, 2)
+
+    @property
+    def get_final_total(self):
+        return self.get_cart_total - self.get_discount_amount
+
+    def get_cart_total_display(self):
+        return "{:,.0f}".format(self.get_cart_total)
+        
+    def get_discount_amount_display(self):
+        return "{:,.0f}".format(self.get_discount_amount)
+        
+    def get_final_total_display(self):
+        return "{:,.0f}".format(self.get_final_total)
 
 # Order Item Model
 class OrderItem(models.Model):

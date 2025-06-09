@@ -1,113 +1,72 @@
-{% extends 'admin/base_admin.html' %}
-
-{% block content %}
-<div class="container-fluid">
-    <div class="card">
-        <div class="card-header">
-            <h4 class="card-title mb-0">
-                {% if promotion %}Chỉnh sửa{% else %}Thêm mới{% endif %} mã giảm giá
-            </h4>
-        </div>
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label">Mã giảm giá</label>
-                            <input type="text" name="code" class="form-control" 
-                                   value="{{ promotion.promotion_code }}"
-                                   {% if promotion %}readonly{% endif %} required>
+<div class="modal fade" id="{{ form_id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% if form_id == 'editPromotionModal' %}#{% else %}{% url 'admin_promotions_add' %}{% endif %}">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Promotion Code*</label>
+                            <input type="text" class="form-control" name="promotion_code" required>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Mô tả</label>
-                            <textarea name="description" class="form-control" rows="3">{{ promotion.description }}</textarea>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Loại giảm giá</label>
-                            <select name="discount_type" class="form-select" required>
-                                <option value="percent" {% if promotion.discount_type == 'percent' %}selected{% endif %}>
-                                    Phần trăm
-                                </option>
-                                <option value="amount" {% if promotion.discount_type == 'amount' %}selected{% endif %}>
-                                    Số tiền cố định
-                                </option>
+                        <div class="col-md-6">
+                            <label class="form-label">Discount Type*</label>
+                            <select class="form-select" name="discount_type" required>
+                                <option value="percent">Percentage</option>
+                                <option value="amount">Fixed Amount</option>
                             </select>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Giá trị giảm</label>
-                            <div class="input-group">
-                                <input type="number" name="discount_value" class="form-control" 
-                                       value="{{ promotion.discount_value }}" required
-                                       min="0" step="0.01">
-                                <span class="input-group-text">%/đ</span>
-                            </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Discount Value*</label>
+                            <input type="number" class="form-control" name="discount_value" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Maximum Discount Amount</label>
+                            <input type="number" class="form-control" name="max_discount_amount">
                         </div>
                     </div>
-                    
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label">Đơn hàng tối thiểu</label>
-                            <div class="input-group">
-                                <input type="number" name="min_order_value" class="form-control" 
-                                       value="{{ promotion.min_order_value }}"
-                                       min="0" step="1000">
-                                <span class="input-group-text">đ</span>
-                            </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Minimum Order Value</label>
+                            <input type="number" class="form-control" name="min_order_value">
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Giảm tối đa</label>
-                            <div class="input-group">
-                                <input type="number" name="max_discount_amount" class="form-control" 
-                                       value="{{ promotion.max_discount_amount }}"
-                                       min="0" step="1000">
-                                <span class="input-group-text">đ</span>
-                            </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Usage Limit</label>
+                            <input type="number" class="form-control" name="usage_limit">
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Thời gian hiệu lực</label>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <input type="datetime-local" name="start_date" class="form-control" 
-                                           value="{{ promotion.start_date|date:'Y-m-d\TH:i' }}" required>
-                                </div>
-                                <div class="col-6">
-                                    <input type="datetime-local" name="end_date" class="form-control" 
-                                           value="{{ promotion.end_date|date:'Y-m-d\TH:i' }}" required>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Giới hạn sử dụng</label>
-                            <input type="number" name="usage_limit" class="form-control" 
-                                   value="{{ promotion.usage_limit }}"
-                                   min="0">
-                        </div>
-                        
-                        {% if promotion %}
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input type="checkbox" name="is_active" class="form-check-input" 
-                                       {% if promotion.is_active %}checked{% endif %}>
-                                <label class="form-check-label">Kích hoạt</label>
-                            </div>
-                        </div>
-                        {% endif %}
                     </div>
-                </div>
-                
-                <div class="d-flex justify-content-end gap-2">
-                    <a href="{% url 'admin_promotions' %}" class="btn btn-secondary">Hủy</a>
-                    <button type="submit" class="btn btn-primary">Lưu</button>
-                </div>
-            </form>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date*</label>
+                            <input type="datetime-local" class="form-control datepicker" name="start_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">End Date*</label>
+                            <input type="datetime-local" class="form-control datepicker" name="end_date" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_active" checked>
+                            <label class="form-check-label">Active</label>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
-{% endblock %}

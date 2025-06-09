@@ -114,13 +114,18 @@
                                         </h5>
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <span class="text-muted">Tạm tính:</span>
-                                            <span class="fw-bold" id="subtotal">{{ order.get_cart_items_total }}đ</span>
+                                            <span class="fw-bold" id="subtotal">{{ order.get_cart_total }}đ</span>
                                         </div>
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-3" id="discountRow" {% if not order.promotion %}style="display: none"{% endif %}>
                                             <span class="text-muted">Giảm giá:</span>
-                                            <span id="discountAmount" class="fw-bold text-danger">
-                                                -{{ order.get_discount_amount|floatformat:"0" }}đ
-                                            </span>
+                                            <div>
+                                                <span id="discountText" class="badge bg-success me-2">
+                                                    {% if order.promotion %}{{ order.promotion.promotion_code }}{% endif %}
+                                                </span>
+                                                <span id="discountAmount" class="fw-bold text-danger">
+                                                    {% if order.promotion %}-{{ order.get_discount_amount }}đ{% endif %}
+                                                </span>
+                                            </div>
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <span class="text-muted">Phí vận chuyển:</span>
@@ -129,7 +134,7 @@
                                         <hr>
                                         <div class="d-flex justify-content-between align-items-center mb-4">
                                             <span class="h5 mb-0">Tổng cộng:</span>
-                                            <span class="h4 mb-0 text-primary fw-bold">{{ order.get_cart_total|floatformat:"0" }}đ</span>
+                                            <span class="h4 mb-0 text-primary fw-bold" id="totalAmount">{{ order.get_final_total }}đ</span>
                                         </div>
                                         <a href="{% url 'checkout' %}" class="btn btn-primary btn-lg w-100 rounded-pill">
                                             <i class="fas fa-credit-card me-2"></i>Thanh toán ngay
@@ -256,3 +261,149 @@
 }
 </style>
 {% endblock cart_content %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Handle promotion code
+    $('#applyPromotion').click(function() {
+        const code = $('#promotionCode').val().trim();
+        if (!code) {
+            showMessage('Vui lòng nhập mã giảm giá', 'danger');
+            return;
+        }
+
+        const csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
+        
+        $.ajax({
+            url: '{% url "apply_promotion" %}',
+            type: 'POST',
+            data: {
+                'promotion_code': code,
+                'csrfmiddlewaretoken': csrfToken
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Update discount info
+                    $('#discountRow').show();
+                    $('#discountText').text(response.discount_text);
+                    $('#discountAmount').text('-' + formatCurrency(response.discount_amount));
+                    
+                    // Update totals
+                    $('#subtotal').text(formatCurrency(response.original_total));
+                    $('#totalAmount').text(formatCurrency(response.new_total));
+                    
+                    // Show success message
+                    showMessage(response.message, 'success');
+                    
+                    // Disable promotion inputs
+                    $('#promotionCode').prop('disabled', true);
+                    $('#applyPromotion').prop('disabled', true);
+                    
+                    // Force update cart items to reflect new prices
+                    $.get('{% url "update_cart" %}', {
+                        'action': 'refresh'
+                    }, function(data) {
+                        if (data.cart_total_amount) {
+                            $('.cart-total').text(formatCurrency(data.cart_total_amount));
+                        }
+                    });
+                } else {
+                    showMessage(response.error, 'danger');
+                }
+            },
+            error: function() {
+                showMessage('Có lỗi xảy ra, vui lòng thử lại sau', 'danger');
+            }
+        });
+    });
+
+    // Handle cart quantity updates
+    $('.update-cart').click(function() {
+        const btn = $(this);
+        const action = btn.data('action');
+        const productId = btn.data('product');
+        const row = btn.closest('tr');
+        
+        $.get('{% url "update_cart" %}', {
+            'action': action,
+            'product_id': productId
+        }, function(data) {
+            // Update quantity display
+            row.find('input[type="text"]').val(data.quantity);
+            
+            // Update item total
+            row.find('.text-primary').text(formatCurrency(data.item_total));
+            
+            // Update cart totals including discount
+            $('#subtotal').text(formatCurrency(data.original_total));
+            
+            if (data.discount_amount > 0) {
+                $('#discountAmount').text('-' + formatCurrency(data.discount_amount));
+            }
+            
+            $('#totalAmount').text(formatCurrency(data.cart_total_amount));
+            
+            // Remove row if quantity is 0
+            if (data.quantity === 0) {
+                row.fadeOut(300, function() { $(this).remove(); });
+                checkEmptyCart();
+            }
+            
+            // Update cart badge
+            $('.cart-badge').text(data.cart_total);
+            // Update cart total in header if exists
+            $('.cart-total').text(formatCurrency(data.cart_total_amount));
+        });
+    });
+
+    // Handle item removal
+    $('.remove-item').click(function() {
+        const btn = $(this);
+        const productId = btn.data('product');
+        
+        if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
+            $.get('{% url "update_cart" %}', {
+                'action': 'remove',
+                'product_id': productId,
+                'remove_all': true
+            }, function(data) {
+                btn.closest('tr').fadeOut(300, function() {
+                    $(this).remove();
+                    checkEmptyCart();
+                });
+                
+                // Update cart totals
+                $('#subtotal').text(formatCurrency(data.cart_total_amount));
+                $('#totalAmount').text(formatCurrency(data.cart_total_amount));
+                $('.cart-badge').text(data.cart_total);
+            });
+        }
+    });
+});
+
+// Helper functions
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+        .format(amount)
+        .replace('₫', 'đ');
+}
+
+function showMessage(message, type) {
+    const msgDiv = $('#promotionMessage');
+    msgDiv.html(`<div class="alert alert-${type} py-2 mt-2 mb-0">${message}</div>`);
+    
+    setTimeout(() => {
+        msgDiv.find('.alert').fadeOut(300, function() {
+            $(this).remove();
+        });
+    }, 5000);
+}
+
+function checkEmptyCart() {
+    if ($('.product-row').length === 0) {
+        location.reload(); // Reload to show empty cart template
+    }
+}
+</script>
+{% endblock %}

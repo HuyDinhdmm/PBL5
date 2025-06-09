@@ -2,7 +2,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title"><i class="fas fa-receipt me-2"></i>Chi tiết đơn hàng <span id="orderId"></span></h5>
+                <h5 class="modal-title"><i class="fas fa-receipt me-2"></i>Chi tiết đơn hàng #<span id="orderIdTitle"></span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -16,7 +16,7 @@
                                 <ul class="list-unstyled mb-0">
                                     <li class="mb-2">
                                         <span class="text-muted">Mã đơn:</span>
-                                        <span class="fw-bold ms-2" id="orderId"></span>
+                                        <span class="fw-bold ms-2" id="orderNumber"></span>
                                     </li>
                                     <li class="mb-2">
                                         <span class="text-muted">Ngày đặt:</span>
@@ -79,6 +79,13 @@
                                 <td colspan="3" class="text-end"><strong>Tạm tính:</strong></td>
                                 <td class="text-end" id="subtotal"></td>
                             </tr>
+                            <tr id="discountRow">
+                                <td colspan="3" class="text-end">
+                                    <strong>Giảm giá:</strong>
+                                    <small id="promotionCode" class="text-muted ms-2"></small>
+                                </td>
+                                <td class="text-end text-danger" id="discountAmount"></td>
+                            </tr>
                             <tr>
                                 <td colspan="3" class="text-end"><strong>Phí vận chuyển:</strong></td>
                                 <td class="text-end text-success">Miễn phí</td>
@@ -92,19 +99,20 @@
                 </div>
             </div>
             <div class="modal-footer bg-light">
-                <form method="POST" class="d-inline">
+                <form method="POST" class="d-flex align-items-center w-100 gap-2">
                     {% csrf_token %}
                     <input type="hidden" name="order_id" id="updateOrderId">
-                    <select name="status" class="form-select d-inline-block w-auto me-2">
+                    <label class="form-label mb-0 me-2">Trạng thái:</label>
+                    <select name="status" class="form-select w-auto">
                         <option value="pending">Chờ xử lý</option>
                         <option value="processing">Đang xử lý</option>
                         <option value="shipped">Đang giao</option>
                         <option value="delivered">Đã giao</option>
                         <option value="cancelled">Đã hủy</option>
                     </select>
-                    <button type="submit" class="btn btn-primary">Cập nhật trạng thái</button>
+                    <button type="submit" class="btn btn-primary ms-auto">Cập nhật trạng thái</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                 </form>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
             </div>
         </div>
     </div>

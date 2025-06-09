@@ -32,43 +32,19 @@ def register(request):
         email = request.POST.get('email')
         password = request.POST.get('password')
         
-        # Username validation
-        if len(username) < 3:
-            messages.error(request, 'Username phải có ít nhất 3 ký tự')
-            return redirect('register')
-            
-        if len(username) > 20:
-            messages.error(request, 'Username không được vượt quá 20 ký tự')
-            return redirect('register')
-            
-        if not username.replace('_', '').isalnum():
-            messages.error(request, 'Username chỉ được chứa chữ cái, số và dấu gạch dưới')
-            return redirect('register')
-            
-        # Check if username exists
         if Customer.objects.filter(username=username).exists():
-            messages.error(request, 'Username này đã được sử dụng')
-            return redirect('register')
-        
-        # Check if email exists
-        if Customer.objects.filter(email=email).exists():
-            messages.error(request, 'Email này đã được sử dụng')
+            messages.error(request, 'Username already exists')
             return redirect('register')
             
-        # Create user
-        try:
-            user = Customer.objects.create_user(
-                username=username,
-                email=email,
-                password=password,
-                role='customer'
-            )
-            auth_login(request, user)
-            messages.success(request, 'Đăng ký thành công!')
-            return redirect('home')
-        except Exception as e:
-            messages.error(request, f'Đăng ký thất bại: {str(e)}')
-            return redirect('register')
+        user = Customer.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            role='customer'
+        )
+        auth_login(request, user)
+        messages.success(request, 'Registration successful!')
+        return redirect('home')
         
     return render(request, 'app/register.html')
 
@@ -147,12 +123,6 @@ def checkout(request):
     if request.method == 'POST':
         shipping_address = request.POST.get('shipping_address')
         payment_method = request.POST.get('payment_method')
-        phone_number = request.POST.get('phone_number')
-        
-        # Add phone number validation
-        if not phone_number.isdigit() or len(phone_number) != 10:
-            messages.error(request, 'Số điện thoại không hợp lệ')
-            return redirect('checkout')
         
         if not order or not order.orderitem_set.exists():
             message = 'Giỏ hàng của bạn đang trống!'
@@ -164,9 +134,6 @@ def checkout(request):
         try:
             order.shipping_address = shipping_address
             order.payment_method = payment_method
-            # Update customer phone number
-            customer.phone_number = phone_number
-            customer.save()
             order.save()
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -193,6 +160,10 @@ def checkout(request):
         'items': order.orderitem_set.all() if order else [],
         'shipping_address': customer.address,
         'user': customer,
+        'subtotal': order.get_cart_total if order else 0,
+        'discount': order.get_discount_amount if order else 0,
+        'total': order.get_final_total if order else 0,
+        'promotion': order.promotion if order else None
     }
     return render(request, 'app/checkout.html', context)
 
@@ -244,35 +215,75 @@ def update_cart(request):
         return JsonResponse({'error': 'Please login first'}, status=401)
 
     action = request.GET.get('action')
-    product_id = request.GET.get('product_id')
     
-    if not all([action, product_id]):
-        return JsonResponse({'error': 'Invalid request'}, status=400)
+    try:
+        customer = request.user
+        order = Order.objects.get(customer=customer, status='pending')
         
-    customer = request.user
-    product = get_object_or_404(Product, id=product_id)
-    order = Order.objects.get(customer=customer, status='pending')
-    order_item = get_object_or_404(OrderItem, order=order, product=product)
-    
-    if action == 'add':
-        order_item.quantity += 1
-    elif action == 'remove':
-        order_item.quantity -= 1
-    
-    if order_item.quantity <= 0:
-        order_item.delete()
-    else:
-        order_item.save()
+        if action == 'refresh':
+            # Just return updated totals
+            cart_total = order.get_cart_total
+            discount_amount = order.get_discount_amount
+            final_total = order.get_final_total
+            
+            return JsonResponse({
+                'cart_total': order.get_cart_items,
+                'cart_total_amount': float(final_total),
+                'original_total': float(cart_total),
+                'discount_amount': float(discount_amount)
+            })
+            
+        product_id = request.GET.get('product_id')
+        remove_all = request.GET.get('remove_all') == 'true'
         
-    order.total_amount = order.get_cart_total
-    order.save()
-    
-    return JsonResponse({
-        'quantity': order_item.quantity if order_item.quantity > 0 else 0,
-        'cart_total': order.get_cart_items,
-        'item_total': float(order_item.get_total) if order_item.quantity > 0 else 0,
-        'cart_total_amount': float(order.get_cart_total)
-    })
+        if not all([action, product_id]):
+            return JsonResponse({'error': 'Invalid request'}, status=400)
+            
+        try:
+            customer = request.user
+            product = get_object_or_404(Product, id=product_id)
+            order = Order.objects.get(customer=customer, status='pending')
+            order_item = get_object_or_404(OrderItem, order=order, product=product)
+            
+            if action == 'add':
+                order_item.quantity += 1
+            elif action == 'remove':
+                if remove_all:
+                    order_item.delete()
+                    quantity = 0
+                else:
+                    order_item.quantity -= 1
+                    if order_item.quantity <= 0:
+                        order_item.delete()
+                        quantity = 0
+                    else:
+                        order_item.save()
+                        quantity = order_item.quantity
+            
+            # Recalculate order totals
+            cart_total = order.get_cart_total
+            discount_amount = order.get_discount_amount
+            final_total = order.get_final_total
+
+            # Update total_amount with final total
+            order.total_amount = final_total
+            order.save()
+            
+            return JsonResponse({
+                'quantity': quantity if 'quantity' in locals() else order_item.quantity,
+                'cart_total': order.get_cart_items,
+                'item_total': float(order_item.get_total) if order_item.quantity > 0 else 0,
+                'cart_total_amount': float(final_total),
+                'original_total': float(cart_total),
+                'discount_amount': float(discount_amount)
+            })
+            
+        except Exception as e:
+            logger.error(f"Cart update error: {str(e)}")
+            return JsonResponse({'error': str(e)}, status=400)
+    except Exception as e:
+        logger.error(f"Cart update error: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=400)
 
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -461,8 +472,12 @@ def admin_orders(request):
 def admin_order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     items = order.orderitem_set.all()
+    
+    # Calculate totals
+    subtotal = float(order.get_cart_total)
+    discount = float(order.get_discount_amount) if order.promotion else 0
+    total = float(order.get_final_total)
 
-    # Định dạng dữ liệu trả về
     return JsonResponse({
         'order_id': order.id,
         'date': order.order_date.strftime('%d/%m/%Y %H:%M'),
@@ -482,7 +497,14 @@ def admin_order_detail(request, order_id):
             'price': float(item.price),
             'total': float(item.get_total)
         } for item in items],
-        'total': float(order.total_amount)
+        'promotion': {
+            'code': order.promotion.promotion_code if order.promotion else None,
+            'discount_type': order.promotion.get_discount_type_display() if order.promotion else None,
+            'discount_value': float(order.promotion.discount_value) if order.promotion else 0
+        },
+        'subtotal': subtotal,
+        'discount': discount,
+        'total': total
     })
 
 @staff_member_required
@@ -922,6 +944,7 @@ def apply_promotion(request):
     if request.method == 'POST':
         code = request.POST.get('promotion_code')
         try:
+            # Kiểm tra mã giảm giá có tồn tại và còn hiệu lực
             promotion = Promotion.objects.get(
                 promotion_code=code,
                 start_date__lte=timezone.now(),
@@ -929,51 +952,149 @@ def apply_promotion(request):
                 is_active=True
             )
             
-            # Get current cart
+            # Lấy đơn hàng hiện tại
             order = Order.objects.get(customer=request.user, status='pending')
-            cart_total = order.get_cart_total
+            original_total = order.get_cart_total
 
-            # Check minimum order value
-            if promotion.min_order_value and cart_total < promotion.min_order_value:
+            # Kiểm tra giá trị đơn hàng tối thiểu
+            if promotion.min_order_value and original_total < promotion.min_order_value:
                 return JsonResponse({
                     'success': False, 
-                    'error': f'Đơn hàng tối thiểu {int(promotion.min_order_value)}đ'
+                    'error': f'Đơn hàng cần tối thiểu {int(promotion.min_order_value):,}đ để áp dụng mã giảm giá này'
                 })
 
-            # Calculate discount
+            # Kiểm tra giới hạn sử dụng
+            if promotion.usage_limit:
+                used_count = Order.objects.filter(promotion=promotion, status__in=['processing', 'paid', 'shipped', 'delivered']).count()
+                if used_count >= promotion.usage_limit:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Mã giảm giá đã hết lượt sử dụng!'
+                    })
+
+            # Tính toán giảm giá
             if promotion.discount_type == 'percent':
-                discount = cart_total * (promotion.discount_value / 100)
+                discount = original_total * (promotion.discount_value / 100)
                 if promotion.max_discount_amount:
                     discount = min(discount, promotion.max_discount_amount)
             else:
-                discount = promotion.discount_value
+                discount = min(promotion.discount_value, original_total)  # Không giảm quá giá trị đơn hàng
 
-            # Update order
+            # Làm tròn số
+            discount = round(discount, 2)
+            new_total = original_total - discount
+
+            # Cập nhật đơn hàng
             order.promotion = promotion
+            order.total_amount = new_total
             order.save()
-
-            new_total = cart_total - discount
             
+            discount_text = (
+                f"{int(promotion.discount_value)}% (Tối đa {int(promotion.max_discount_amount):,}đ)" 
+                if promotion.discount_type == 'percent' and promotion.max_discount_amount
+                else f"{int(promotion.discount_value)}%" 
+                if promotion.discount_type == 'percent'
+                else f"{int(promotion.discount_value):,}đ"
+            )
+
             return JsonResponse({
                 'success': True,
                 'discount_amount': int(discount),
                 'new_total': int(new_total),
-                'discount_value': (
-                    f"{int(promotion.discount_value)}%" 
-                    if promotion.discount_type == 'percent' 
-                    else f"{int(promotion.discount_value)}đ"
-                )
+                'original_total': int(original_total),
+                'discount_text': discount_text,
+                'message': 'Áp dụng mã giảm giá thành công!'
             })
 
         except Promotion.DoesNotExist:
             return JsonResponse({
                 'success': False,
-                'error': 'Mã giảm giá không hợp lệ!'
+                'error': 'Mã giảm giá không tồn tại hoặc đã hết hạn!'
             })
-        except Exception as e:
+        except Order.DoesNotExist:
             return JsonResponse({
                 'success': False,
-                'error': 'Có lỗi xảy ra!'
+                'error': 'Không tìm thấy đơn hàng!'
+            })
+        except Exception as e:
+            logger.error(f"Promotion error: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Có lỗi xảy ra khi áp dụng mã giảm giá!'
             })
             
-    return JsonResponse({'success': False, 'error': 'Invalid request'})
+    return JsonResponse({'success': False, 'error': 'Yêu cầu không hợp lệ!'})
+
+@staff_member_required
+def admin_promotions(request):
+    promotions = Promotion.objects.all().order_by('-start_date')
+    return render(request, 'admin/promotions.html', {'promotions': promotions})
+
+@staff_member_required
+def admin_promotions_add(request):
+    if request.method == 'POST':
+        try:
+            promotion = Promotion.objects.create(
+                promotion_code=request.POST.get('promotion_code'),
+                discount_type=request.POST.get('discount_type'),
+                discount_value=request.POST.get('discount_value'),
+                start_date=request.POST.get('start_date'),
+                end_date=request.POST.get('end_date'),
+                min_order_value=request.POST.get('min_order_value') or None,
+                max_discount_amount=request.POST.get('max_discount_amount') or None,
+                usage_limit=request.POST.get('usage_limit') or None,
+                description=request.POST.get('description'),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+            messages.success(request, 'Promotion added successfully!')
+        except Exception as e:
+            messages.error(request, f'Error adding promotion: {str(e)}')
+    return redirect('admin_promotions')
+
+@staff_member_required
+def admin_promotion_detail(request, promotion_id):
+    promotion = get_object_or_404(Promotion, id=promotion_id)
+    return JsonResponse({
+        'promotion_code': promotion.promotion_code,
+        'discount_type': promotion.discount_type,
+        'discount_value': str(promotion.discount_value),  # Convert Decimal to string
+        'start_date': promotion.start_date.strftime('%Y-%m-%dT%H:%M'),  # Format datetime
+        'end_date': promotion.end_date.strftime('%Y-%m-%dT%H:%M'),
+        'min_order_value': str(promotion.min_order_value) if promotion.min_order_value else '',
+        'max_discount_amount': str(promotion.max_discount_amount) if promotion.max_discount_amount else '',
+        'usage_limit': promotion.usage_limit if promotion.usage_limit else '',
+        'description': promotion.description or '',
+        'is_active': promotion.is_active
+    })
+
+@staff_member_required
+def admin_promotion_edit(request, promotion_id):
+    if request.method == 'POST':
+        try:
+            promotion = get_object_or_404(Promotion, id=promotion_id)
+            promotion.promotion_code = request.POST.get('promotion_code')
+            promotion.discount_type = request.POST.get('discount_type')
+            promotion.discount_value = request.POST.get('discount_value')
+            promotion.start_date = request.POST.get('start_date')
+            promotion.end_date = request.POST.get('end_date')
+            promotion.min_order_value = request.POST.get('min_order_value') or None
+            promotion.max_discount_amount = request.POST.get('max_discount_amount') or None
+            promotion.usage_limit = request.POST.get('usage_limit') or None
+            promotion.description = request.POST.get('description')
+            promotion.is_active = request.POST.get('is_active') == 'on'
+            promotion.save()
+            messages.success(request, 'Promotion updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating promotion: {str(e)}')
+    return redirect('admin_promotions')
+
+@staff_member_required
+def admin_promotion_delete(request, promotion_id):
+    if request.method == 'POST':
+        try:
+            promotion = get_object_or_404(Promotion, id=promotion_id)
+            promotion.delete()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
