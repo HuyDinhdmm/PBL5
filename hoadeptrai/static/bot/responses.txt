@@ -1,0 +1,70 @@
+[greeting]
+Xin chào! Tôi có thể giúp gì cho bạn? Bạn có thể hỏi về:
+- Menu và giá các món
+- Combo và khuyến mãi
+- Thông tin giao hàng
+- Giờ phục vụ
+
+[menu_drink]
+🥤 Menu đồ uống của chúng tôi:
+- Coca Cola: 15.000đ
+- Pepsi: 15.000đ  
+- Nước cam: 20.000đ
+- Trà đào: 25.000đ
+- Trà sữa trân châu: 30.000đ
+- Cà phê đen: 20.000đ
+- Cà phê sữa: 25.000đ
+
+[menu_dessert]
+🍰 Các món tráng miệng ngon tuyệt:
+- Kem vanilla mát lạnh: 25.000đ
+- Bánh flan caramen: 20.000đ  
+- Cheese cake New York: 35.000đ
+- Pudding chocolate: 25.000đ
+
+[menu_main]
+🍽️ Menu chính của chúng tôi:
+- Hamburger bò phô mai: 45.000đ
+- Hamburger gà: 40.000đ
+- Pizza hải sản: 120.000đ  
+- Pizza thịt xông khói: 110.000đ
+- Khoai tây chiên: 25.000đ
+- Gà rán (3 miếng): 65.000đ
+- Cánh gà sốt BBQ: 55.000đ
+
+[combo]
+🎁 COMBO SIÊU TIẾT KIỆM:
+
+1️⃣ Combo Burger (75.000đ):
+   - 1 Hamburger + 1 Khoai tây + 1 Coca
+
+2️⃣ Combo Gà rán (95.000đ):
+   - 3 miếng gà + 1 Khoai tây + 1 Pepsi
+
+3️⃣ Combo Pizza (150.000đ): 
+   - 1 Pizza + 2 Nước ngọt + 1 Tráng miệng
+
+4️⃣ Combo Gia đình (220.000đ):
+   - 2 Burger + 1 Gà rán + 2 Khoai tây + 4 Nước
+
+[delivery]
+🚚 CHÍNH SÁCH GIAO HÀNG:
+- Free ship cho đơn hàng từ 200.000đ
+- Phí ship: 15.000đ (dưới 3km)
+- Thời gian giao: 30-45 phút
+- Đặt hàng qua hotline: 1900 xxxx
+
+[time]
+⏰ THỜI GIAN PHỤC VỤ:
+- Mở cửa: 9:00 - 22:00
+- Phục vụ tất cả các ngày trong tuần
+- Giờ cao điểm: 11:30-13:30 và 18:00-20:00
+
+[unknown]
+Xin lỗi, tôi chưa hiểu rõ câu hỏi của bạn. Bạn có thể hỏi về:
+- Menu và giá các món
+- Combo và khuyến mãi  
+- Thông tin giao hàng
+- Giờ phục vụ
+
+Hoặc gọi 1900 xxxx để được tư vấn trực tiếp.

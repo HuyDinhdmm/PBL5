@@ -1,0 +1,72 @@
+<div class="modal fade" id="{{ form_id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% if form_id == 'editPromotionModal' %}#{% else %}{% url 'admin_promotions_add' %}{% endif %}">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Promotion Code*</label>
+                            <input type="text" class="form-control" name="promotion_code" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Discount Type*</label>
+                            <select class="form-select" name="discount_type" required>
+                                <option value="percent">Percentage</option>
+                                <option value="amount">Fixed Amount</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Discount Value*</label>
+                            <input type="number" class="form-control" name="discount_value" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Maximum Discount Amount</label>
+                            <input type="number" class="form-control" name="max_discount_amount">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Minimum Order Value</label>
+                            <input type="number" class="form-control" name="min_order_value">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Usage Limit</label>
+                            <input type="number" class="form-control" name="usage_limit">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date*</label>
+                            <input type="datetime-local" class="form-control datepicker" name="start_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">End Date*</label>
+                            <input type="datetime-local" class="form-control datepicker" name="end_date" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_active" checked>
+                            <label class="form-check-label">Active</label>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

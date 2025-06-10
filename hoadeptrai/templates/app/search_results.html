@@ -1,0 +1,44 @@
+{% extends "app/base.html" %}
+{% load static %}
+
+{% block main_content %}
+<div class="container my-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3>Kết quả tìm kiếm cho "{{ query }}"</h3>
+            <p class="text-muted">Tìm thấy {{ Products|length }} sản phẩm</p>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for product in Products %}
+        <div class="col-md-3 mb-4">
+            <div class="card h-100 hover-shadow">
+                <img src="{{ product.image_url|default:'/static/app/images/placeholder.png' }}" 
+                     class="card-img-top" alt="{{ product.product_name }}"
+                     style="height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.product_name }}</h5>
+                    <p class="card-text text-primary">{{ product.price }}đ</p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'product_detail' product.id %}" class="btn btn-outline-primary">
+                            Xem chi tiết
+                        </a>
+                        <button onclick="addToCart({{ product.id }})" class="btn btn-primary">
+                            <i class="fas fa-shopping-cart me-2"></i>Thêm vào giỏ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-search fa-4x text-muted mb-3"></i>
+            <h4>Không tìm thấy sản phẩm nào</h4>
+            <p class="text-muted">Vui lòng thử lại với từ khóa khác</p>
+            <a href="{% url 'home' %}" class="btn btn-primary">Quay về trang chủ</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock main_content %}

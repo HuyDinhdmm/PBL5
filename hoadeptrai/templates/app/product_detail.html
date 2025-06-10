@@ -1,0 +1,84 @@
+{% extends "app/base.html" %}
+{% load static %}
+
+{% block main_content %}
+<div class="container my-5">
+    <div class="row">
+        <!-- Product Image -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                {% if product.image_url %}
+                    <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.product_name }}" 
+                         style="height: 400px; object-fit: cover;">
+                {% else %}
+                    <img src="{% static 'app/images/placeholder.png' %}" class="card-img-top" alt="placeholder"
+                         style="height: 400px; object-fit: cover;">
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="col-md-6">
+            <div class="d-flex flex-column align-items-start mb-3">
+                <h2 class="mb-2">{{ product.product_name }}</h2>
+                <div class="d-flex flex-column gap-2">
+                    <div class="d-flex gap-2">
+                        {% if product.category.parent_category %}
+                            <span class="badge bg-secondary">{{ product.category.parent_category.category_name }}</span>
+                            <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                        {% else %}
+                            <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                        {% endif %}
+                    </div>
+                    {% if product.status %}
+                        <span class="badge bg-success" style="width: fit-content">Còn hàng</span>
+                    {% else %}
+                        <span class="badge bg-danger" style="width: fit-content">Hết hàng</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <h3 class="text-primary my-3">{{ product.price }}đ</h3>
+            
+            <p class="text-muted">{{ product.description }}</p>
+            
+            <hr class="my-4">
+            
+            <div class="d-flex gap-3">
+                <button onclick="addToCart({{ product.id }})" class="btn btn-outline-primary btn-lg flex-grow-1">
+                    <i class="fas fa-shopping-cart me-2"></i>Thêm vào giỏ
+                </button>
+                <a href="{% url 'checkout' %}?product_id={{ product.id }}&buy_now=true" 
+                   class="btn btn-primary btn-lg flex-grow-1">
+                    <i class="fas fa-bolt me-2"></i>Mua ngay
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    {% if related_products %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4">Sản phẩm liên quan</h3>
+        </div>
+        {% for related in related_products %}
+        <div class="col-md-3 mb-4">
+            <div class="card h-100 hover-shadow">
+                <img src="{{ related.image_url|default:'/static/app/images/placeholder.png' }}" 
+                     class="card-img-top" alt="{{ related.product_name }}"
+                     style="height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">{{ related.product_name }}</h5>
+                    <p class="text-primary">{{ related.price }}đ</p>
+                    <a href="{% url 'product_detail' related.id %}" class="btn btn-outline-primary">
+                        Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock main_content %}

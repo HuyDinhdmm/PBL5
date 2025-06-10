@@ -1,0 +1,120 @@
+/* Background tổng thể */
+body {
+    background: linear-gradient(135deg, #74ebd5, #9face6);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    overflow: hidden;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(135deg, #74ebd5, #9face6, #74ebd5);
+    animation: gradientAnimation 15s infinite linear;
+    z-index: -1;
+    filter: blur(50px);
+}
+
+@keyframes gradientAnimation {
+    0% { transform: translateX(-50%) translateY(-50%); }
+    100% { transform: translateX(0) translateY(0); }
+}
+
+/* Form chính */
+form {
+    max-width: 600px; /* Tăng độ rộng */
+    width: 100%;
+    padding: 40px; /* Tăng khoảng cách bên trong */
+    border-radius: 25px; /* Bo tròn góc mềm mại */
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px);
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+/* Tiêu đề biểu mẫu */
+form h3 {
+    font-size: 1.8rem;
+    color: #4d47f5;
+    margin-bottom: 30px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 1px 1px 5px rgba(108, 99, 255, 0.4);
+}
+
+/* Các trường nhập liệu */
+form .form-control {
+    width: 100%;
+    padding: 15px;
+    border-radius: 15px; /* Bo tròn góc input */
+    border: 2px solid #ddd; /* Tăng độ dày của border */
+    margin-bottom: 20px;
+    font-size: 1rem;
+    color: #333;
+    background: #fdfdfd;
+    transition: all 0.3s ease;
+}
+
+form .form-control:focus {
+    border-color: #6c63ff;
+    box-shadow: 0 0 12px rgba(108, 99, 255, 0.6);
+    background: #fff;
+}
+
+/* Nút bấm */
+form .btn {
+    display: inline-block;
+    padding: 15px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 30px; /* Bo tròn nút bấm */
+    color: #fff;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+form .btn-primary {
+    background: linear-gradient(135deg, #6c63ff, #4d47f5);
+}
+
+form .btn-primary:hover {
+    background: linear-gradient(135deg, #4d47f5, #6c63ff);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(76, 72, 245, 0.3);
+}
+
+form .btn-reset {
+    background-color: #e0e0e0;
+    color: #555;
+}
+
+form .btn-reset:hover {
+    background-color: #d6d6d6;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Phản hồi nhập liệu */
+form .form-control.is-valid {
+    border-color: #28a745;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
+
+form .form-control.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+}
+

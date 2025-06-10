@@ -1,0 +1,69 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="container mt-5" style="margin-bottom: 100px !important;">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0 text-center">Thanh toán đơn hàng</h4>
+                </div>
+                <div class="card-body text-center">
+                    <h5 class="mb-3">Tổng tiền: {{ amount|floatformat:0 }}đ</h5>
+                    <p class="mb-4">Mã đơn hàng: #{{ order.id }}</p>
+                    
+                    <div class="mb-4">
+                        <h6 class="mb-3">Quét mã QR để thanh toán:</h6>
+                        
+                        {% if order_qr_code %}
+                        <div class="qr-code-container mb-3">
+                            <img src="data:image/png;base64,{{ order_qr_code }}" 
+                                 alt="QR Code" 
+                                 class="img-fluid"
+                                 style="max-width: 300px;">
+                        </div>
+                        {% endif %}
+
+                        <div class="text-center">
+                            <p class="text-muted mb-3">--- hoặc ---</p>
+                            {% if order_url %}
+                            <a href="{{ order_url }}" class="btn btn-primary btn-lg mb-3 w-100">
+                                <i class="fas fa-mobile-alt me-2"></i>
+                                Mở ứng dụng ZaloPay
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Vui lòng hoàn tất thanh toán trong ứng dụng ZaloPay
+                    </div>
+
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Không tắt hoặc rời khỏi trang cho đến khi nhận được thông báo thành công
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'order_history' %}" class="btn btn-secondary">
+                            <i class="fas fa-history me-2"></i>
+                            Xem lịch sử đơn hàng
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if debug %}
+<script>
+console.log("Debug info:");
+console.log("Order URL:", "{{ order_url }}");
+console.log("ZP Token:", "{{ zptranstoken }}");
+console.log("Amount:", "{{ amount }}");
+</script>
+{% endif %}
+{% endblock %}

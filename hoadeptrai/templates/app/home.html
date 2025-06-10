@@ -1,0 +1,168 @@
+{% extends "app/base.html" %}
+{% load static %}
+
+{% block slider %}
+<div id="mainCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#mainCarousel" data-bs-slide-to="0" class="active"></button>
+        <button type="button" data-bs-target="#mainCarousel" data-bs-slide-to="1"></button>
+        <button type="button" data-bs-target="#mainCarousel" data-bs-slide-to="2"></button>
+    </div>
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <img src="{% static 'app/images/slider/2.jpg' %}" class="d-block w-100" alt="Banner 1" style="height: 500px; object-fit: cover;">
+        </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#mainCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#mainCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+    </button>
+</div>
+{% endblock slider %}
+
+{% block main_content %}
+<div class="container" style="margin-bottom: 100px;">
+    <!-- Debug info -->
+    {% if debug %}
+    <div class="alert alert-info">
+        Number of products: {{ products|length }}
+    </div>
+    {% endif %}
+    
+    <!-- Products Grid -->
+    <div class="row">
+        {% for product in products %}
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm hover-shadow">
+                <div class="position-relative">
+                    {% if product.image_url %}
+                        <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.product_name }}" 
+                             style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <img src="{% static 'app/images/placeholder.png' %}" class="card-img-top" alt="placeholder"
+                             style="height: 200px; object-fit: cover;">
+                    {% endif %}
+                    {% if product.status %}
+                        <span class="badge bg-success position-absolute top-0 end-0 m-2">Còn hàng</span>
+                    {% else %}
+                        <span class="badge bg-danger position-absolute top-0 end-0 m-2">Hết hàng</span>
+                    {% endif %}
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex flex-column mb-2">
+                        <h5 class="card-title mb-2">
+                            <a href="{% url 'product_detail' product.id %}" class="text-decoration-none text-dark">
+                                {{ product.product_name }}
+                            </a>
+                        </h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if product.category.parent_category %}
+                                <span class="badge bg-secondary">{{ product.category.parent_category.category_name }}</span>
+                                <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                            {% else %}
+                                <span class="badge bg-primary">{{ product.category.category_name }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p class="card-text text-muted small mb-3">{{ product.description|truncatewords:15 }}</p>
+                    <div class="mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="text-primary mb-0">{{ product.price }}đ</h5>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button onclick="addToCart({{ product.id }})" class="btn btn-primary">
+                                <i class="fas fa-shopping-cart me-2"></i>Thêm vào giỏ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+            <h4>Không có sản phẩm nào</h4>
+            <p class="text-muted">Vui lòng quay lại sau</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Categories Section -->
+    <div class="row mt-5 mb-4">
+        <div class="col-12">
+            <h3 class="text-center mb-4">Danh mục món ăn</h3>
+        </div>
+        {% for category in categories %}
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+            <a href="{% url 'home' %}?category={{ category.id }}" class="text-decoration-none">
+                <div class="card text-center hover-shadow h-100">
+                    <div class="card-body">
+                        <div class="category-icon mb-3">
+                            {% if category.category_name == "Đồ ăn nhanh" %}
+                                <i class="fas fa-hamburger fa-3x text-primary"></i>
+                            {% elif category.category_name == "Món chính" %}
+                                <i class="fas fa-utensils fa-3x text-success"></i>
+                            {% elif category.category_name == "Đồ uống" %}
+                                <i class="fas fa-coffee fa-3x text-warning"></i>
+                            {% elif category.category_name == "Tráng miệng" %}
+                                <i class="fas fa-ice-cream fa-3x text-danger"></i>
+                            {% else %}
+                                <i class="fas fa-cookie-bite fa-3x text-secondary"></i>
+                            {% endif %}
+                        </div>
+                        <h5 class="card-title text-dark">{{ category.category_name }}</h5>
+                        <p class="text-muted small">
+                            {% with count=category.product_set.count %}
+                                {{ count }} sản phẩm
+                            {% endwith %}
+                        </p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center">
+            <p class="text-muted">Chưa có danh mục nào.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if has_other_pages %}
+    <div class="d-flex justify-content-center mt-4">
+        <nav>
+            <ul class="pagination">
+                {% if products.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ products.previous_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">&laquo;</a>
+                    </li>
+                {% endif %}
+                
+                {% for i in products.paginator.page_range %}
+                    <li class="page-item {% if products.number == i %}active{% endif %}">
+                        <a class="page-link" href="?page={{ i }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">{{ i }}</a>
+                    </li>
+                {% endfor %}
+                
+                {% if products.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ products.next_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">&raquo;</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock main_content %}

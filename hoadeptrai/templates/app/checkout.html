@@ -1,0 +1,160 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="container my-5" style="margin-bottom: 100px !important;">
+    <div class="row">
+        <!-- Order Summary -->
+        <div class="col-lg-4 order-lg-2 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Đơn hàng của bạn</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in items %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-1">{{ item.product.product_name }}</h6>
+                            <small class="text-muted">Số lượng: {{ item.quantity }}</small>
+                        </div>
+                        <span>{{ item.get_total }}đ</span>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="order-summary">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted">Tạm tính:</span>
+                            <span class="fw-bold">{{ order.get_cart_total_display }}đ</span>
+                        </div>
+
+                        {% if order.promotion %}
+                        <div class="d-flex justify-content-between align-items-center mb-3" id="discountRow">
+                            <span class="text-muted">
+                                Giảm giá:
+                                <small class="text-success">({{ order.promotion.promotion_code }})</small>
+                            </span>
+                            <span class="text-danger">-{{ order.get_discount_amount_display }}đ</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted">Phí vận chuyển:</span>
+                            <span class="text-success">Miễn phí</span>
+                        </div>
+                        
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <span class="h5 mb-0">Tổng cộng:</span>
+                            <span class="h4 mb-0 text-primary fw-bold">{{ order.get_final_total_display }}đ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checkout Form -->
+        <div class="col-lg-8 order-lg-1">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Thông tin thanh toán</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="checkoutForm">
+                        {% csrf_token %}
+                        <!-- Customer Information -->
+                        <h6 class="mb-3">Thông tin người nhận</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Họ tên</label>
+                                <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Số điện thoại</label>
+                                <input type="tel" class="form-control" value="{{ user.phone_number }}" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" value="{{ user.email }}" readonly>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Địa chỉ giao hàng</label>
+                                <textarea class="form-control" name="shipping_address" rows="3" required>{{ shipping_address }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <h6 class="mb-3">Phương thức thanh toán</h6>
+                        <div class="mb-4 payment-methods">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="payment_method" value="cod" id="codPayment" checked>
+                                <label class="form-check-label" for="codPayment">
+                                    Thanh toán khi nhận hàng (COD)
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="payment_method" value="zalopay" id="zaloPayment">
+                                <label class="form-check-label" for="zaloPayment">
+                                    ZaloPay
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'cart' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-left me-2"></i>Quay lại giỏ hàng
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="placeOrderBtn">
+                                Đặt hàng<i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    var paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+    var placeOrderBtn = document.getElementById('placeOrderBtn');
+    var formData = new FormData(this);
+    
+    placeOrderBtn.disabled = true;
+    placeOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
+
+    fetch("{% url 'checkout' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Response:', data); // Debug logging
+        if (data.success) {
+            if (paymentMethod === 'zalopay') {
+                window.location.href = `/payment/create/${data.order_id}/`;
+            } else if (paymentMethod === 'cod') {
+                window.location.href = data.redirect_url;
+            }
+        } else {
+            alert(data.error || 'Có lỗi xảy ra!');
+            placeOrderBtn.disabled = false;
+            placeOrderBtn.innerHTML = 'Đặt hàng<i class="fas fa-arrow-right ms-2"></i>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi xử lý thanh toán!');
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.innerHTML = 'Đặt hàng<i class="fas fa-arrow-right ms-2"></i>';
+    });
+});
+</script>
+{% endblock main_content %}

@@ -1,0 +1,71 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <!-- BIDV Bank -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Ngân hàng BIDV</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <img src="{% static 'app/images/BIDV_Logo.png' %}" alt="BIDV" height="50" class="mb-3">
+                        <h6>Thông tin tài khoản BIDV</h6>
+                        <p class="mb-1"><strong>NGUYEN VAN HOA</strong></p>
+                        <p class="mb-1">STK: 5602001551</p>
+                        <p class="mb-3">Chi nhánh: HAI VAN</p>
+                        <img src="{% static 'app/images/bank_qr.jpg' %}" alt="QR Code BIDV" class="img-fluid rounded mb-3" style="max-height: 200px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MB Bank -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Ngân hàng MB Bank</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <img src="{% static 'app/images/MB_Logo.png' %}" alt="MB Bank" height="50" class="mb-3">
+                        <h6>Thông tin tài khoản MB Bank</h6>
+                        <p class="mb-1"><strong>NGUYEN VAN HOA</strong></p>
+                        <p class="mb-1">STK: 0123456789</p>
+                        <p class="mb-3">Chi nhánh: DA NANG</p>
+                        <img src="{% static 'app/images/mb_qr.jpg' %}" alt="QR Code MB" class="img-fluid rounded mb-3" style="max-height: 200px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Information -->
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="alert alert-info mb-0">
+                        <h6 class="alert-heading">Thông tin đơn hàng</h6>
+                        <p class="mb-1">Mã đơn hàng: <strong>#{{ order.id }}</strong></p>
+                        <p class="mb-1">Số tiền cần thanh toán: <strong>{{ order.get_cart_total }}đ</strong></p>
+                        <p class="mb-1">Nội dung chuyển khoản: <strong>DH{{ order.id }}</strong></p>
+                        <p class="mb-0 text-danger"><i class="fas fa-info-circle"></i> Vui lòng ghi đúng nội dung chuyển khoản để chúng tôi xác nhận thanh toán nhanh nhất.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="col-12 mt-4 text-center">
+            <a href="{% url 'home' %}" class="btn btn-primary">
+                <i class="fas fa-home me-2"></i>Về trang chủ
+            </a>
+            <a href="{% url 'order_history' %}" class="btn btn-outline-primary ms-2">
+                <i class="fas fa-list me-2"></i>Xem đơn hàng
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock main_content %}

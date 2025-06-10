@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastFood - Registration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f8f8f8;
+            background-image: url('/placeholder.svg?height=200&width=200');
+            background-repeat: repeat;
+            background-size: 200px;
+            background-opacity: 0.1;
+        }
+
+        .register-container {
+            display: flex;
+            width: 800px;
+            height: 450px;
+            background-color: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-panel {
+            width: 60%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .left-panel h2 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+        }
+
+        .left-panel h2::before {
+            content: "🌮";
+            margin-right: 10px;
+            font-size: 24px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px 15px 15px 40px;
+            border: none;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+        }
+
+        .register-btn {
+            background-color: #FFD700; /* Fast food yellow */
+            color: #333;
+            border: none;
+            padding: 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+        }
+
+        .register-btn:hover {
+            background-color: #FFC700;
+        }
+
+        .social-register {
+            text-align: center;
+        }
+
+        .social-register p {
+            color: #777;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .social-icon:hover {
+            background-color: #e0e0e0;
+        }
+
+        .right-panel {
+            width: 40%;
+            background-color: #FFD700; /* Fast food yellow */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px;
+            border-radius: 200px 0 0 200px;
+            position: relative;
+        }
+
+        .right-panel::before {
+            content: "🥤";
+            font-size: 40px;
+            position: absolute;
+            top: 30px;
+            right: 30px;
+        }
+
+        .right-panel::after {
+            content: "🍦";
+            font-size: 40px;
+            position: absolute;
+            bottom: 30px;
+            left: 80px;
+        }
+
+        .right-panel h1 {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .right-panel p {
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+
+        .login-btn {
+            background-color: transparent;
+            color: #333;
+            border: 2px solid #333;
+            padding: 10px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .login-btn:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .register-container {
+                flex-direction: column-reverse;
+                width: 90%;
+                height: auto;
+            }
+
+            .left-panel {
+                width: 100%;
+                padding: 30px;
+            }
+
+            .right-panel {
+                width: 100%;
+                border-radius: 0;
+                padding: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="left-panel">
+            <h2>Join Our Menu</h2>
+            <form method="POST" action="{% url 'register' %}">
+                {% csrf_token %}
+                <div class="input-group">
+                    <i>👤</i>
+                    <input type="text" name="username" placeholder="Username" required>
+                </div>
+                <div class="input-group">
+                    <i>✉️</i>
+                    <input type="email" name="email" placeholder="Email" required>
+                </div>
+                <div class="input-group">
+                    <i>🔒</i>
+                    <input type="password" name="password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="register-btn">Register</button>
+            </form>
+            <div class="social-register">
+                <p>or register with social platforms</p>
+                <div class="social-icons">
+                    <div class="social-icon">G</div>
+                    <div class="social-icon">f</div>
+                    <div class="social-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                        </svg>
+                    </div>
+                    <div class="social-icon">in</div>
+                </div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <h1>Already Ordered?</h1>
+            <p>Have an account with us?</p>
+            <a href="{% url 'login' %}" class="login-btn" style="text-decoration: none;">Login</a>
+            <a href="{% url 'home' %}" class="login-btn" style="text-decoration: none; margin-top: 10px;">Home</a>
+        </div>
+    </div>
+</body>
+</html>

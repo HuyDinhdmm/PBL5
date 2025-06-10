@@ -1,0 +1,122 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Promotions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Promotions</h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPromotionModal">
+            <i class="fas fa-plus me-2"></i>Add Promotion
+        </button>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Type</th>
+                            <th>Value</th>
+                            <th>Valid From</th>
+                            <th>Valid To</th>
+                            <th>Usage</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for promotion in promotions %}
+                        <tr>
+                            <td>{{ promotion.promotion_code }}</td>
+                            <td>{{ promotion.get_discount_type_display }}</td>
+                            <td>
+                                {% if promotion.discount_type == 'percent' %}
+                                    {{ promotion.discount_value }}%
+                                    {% if promotion.max_discount_amount %}
+                                        (Max {{ promotion.max_discount_amount }}đ)
+                                    {% endif %}
+                                {% else %}
+                                    {{ promotion.discount_value }}đ
+                                {% endif %}
+                            </td>
+                            <td>{{ promotion.start_date|date:"d/m/Y" }}</td>
+                            <td>{{ promotion.end_date|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if promotion.usage_limit %}
+                                    {{ promotion.remaining_uses }}/{{ promotion.usage_limit }}
+                                {% else %}
+                                    Unlimited
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if promotion.is_valid %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ promotion.is_valid|yesno:"Active,Inactive" }}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary edit-btn" 
+                                        data-id="{{ promotion.id }}"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editPromotionModal">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-btn"
+                                        data-id="{{ promotion.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'admin/promotion_form.html' with form_id="addPromotionModal" title="Add New Promotion" %}
+{% include 'admin/promotion_form.html' with form_id="editPromotionModal" title="Edit Promotion" %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Handle edit button click
+    $('.edit-btn').click(function() {
+        var id = $(this).data('id');
+        $.get(`/admin-promotions/${id}/`, function(data) {
+            $('#editPromotionModal input[name="promotion_code"]').val(data.promotion_code);
+            $('#editPromotionModal select[name="discount_type"]').val(data.discount_type);
+            $('#editPromotionModal input[name="discount_value"]').val(data.discount_value);
+            $('#editPromotionModal input[name="min_order_value"]').val(data.min_order_value);
+            $('#editPromotionModal input[name="max_discount_amount"]').val(data.max_discount_amount);
+            $('#editPromotionModal input[name="usage_limit"]').val(data.usage_limit);
+            $('#editPromotionModal input[name="start_date"]').val(data.start_date);
+            $('#editPromotionModal input[name="end_date"]').val(data.end_date);
+            $('#editPromotionModal textarea[name="description"]').val(data.description);
+            $('#editPromotionModal input[name="is_active"]').prop('checked', data.is_active);
+            
+            // Update form action
+            $('#editPromotionModal form').attr('action', `/admin-promotions/${id}/edit/`);
+        });
+    });
+
+    // Handle delete button click
+    $('.delete-btn').click(function() {
+        if (confirm('Are you sure you want to delete this promotion?')) {
+            var id = $(this).data('id');
+            $.post(`/admin-promotions/${id}/delete/`, {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            }, function(data) {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

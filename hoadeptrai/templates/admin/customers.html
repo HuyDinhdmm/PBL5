@@ -1,0 +1,389 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Customer Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Customer Management</h1>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Customer List</h6>
+            <div class="input-group w-25">
+                <input type="text" class="form-control" id="searchCustomer" placeholder="Search customers...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Address</th>
+                            <th>Join Date</th>
+                            <th>Orders</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers %}
+                        <tr>
+                            <td>{{ customer.username }}</td>
+                            <td>{{ customer.email }}</td>
+                            <td>{{ customer.phone_number|default:"-" }}</td>
+                            <td>{{ customer.address|default:"-"|truncatechars:30 }}</td>
+                            <td>{{ customer.date_joined|date:"d/m/Y" }}</td>
+                            <td>{{ customer.order_set.count }}</td>
+                            <td>
+                                <span class="badge {% if customer.role == 'admin' %}bg-danger
+                                            {% elif customer.role == 'seller' %}bg-success
+                                            {% else %}bg-primary{% endif %}">
+                                    {{ customer.role|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if customer.is_active %}
+                                    <button class="btn btn-sm btn-success toggle-status"
+                                        data-id="{{ customer.id }}"
+                                        data-status="{{ customer.is_active }}"
+                                        title="Click to deactivate">
+                                        <i class="fas fa-check-circle"></i> Active
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-sm btn-danger toggle-status"
+                                        data-id="{{ customer.id }}"
+                                        data-status="{{ customer.is_active }}"
+                                        title="Click to activate">
+                                        <i class="fas fa-times-circle"></i> Inactive
+                                    </button>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-info view-customer" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#viewCustomerModal"
+                                        data-id="{{ customer.id }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if customer.role != 'admin' %}
+                                <button class="btn btn-sm btn-primary edit-customer"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editCustomerModal"
+                                        data-id="{{ customer.id }}"
+                                        data-username="{{ customer.username }}"
+                                        data-email="{{ customer.email }}"
+                                        data-phone="{{ customer.phone_number }}"
+                                        data-address="{{ customer.address }}"
+                                        data-role="{{ customer.role }}"
+                                        data-status="{{ customer.is_active }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-secondary dropdown-toggle" 
+                                            type="button" 
+                                            data-bs-toggle="dropdown">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <button class="dropdown-item change-password" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#changePasswordModal"
+                                                    data-id="{{ customer.id }}"
+                                                    data-username="{{ customer.username }}">
+                                                <i class="fas fa-lock"></i> Change Password
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item reset-password"
+                                                    data-id="{{ customer.id }}"
+                                                    data-username="{{ customer.username }}">
+                                                <i class="fas fa-sync"></i> Reset Password
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Customer Modal -->
+<div class="modal fade" id="viewCustomerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Customer Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Personal Information</h6>
+                        <hr>
+                        <div id="customerInfo">
+                            Loading...
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Order History</h6>
+                        <hr>
+                        <div id="orderHistory">
+                            Loading...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="customer_id" id="edit-customer-id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" id="edit-username" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" id="edit-email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" name="phone_number" id="edit-phone">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" name="address" id="edit-address" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select class="form-select" name="role" id="edit-role">
+                            <option value="customer">Customer</option>
+                            <option value="seller">Seller</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="edit-status">
+                            <label class="form-check-label" for="edit-status">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="changePasswordForm">
+                {% csrf_token %}
+                <input type="hidden" name="customer_id" id="change-password-id">
+                <div class="modal-body">
+                    <p>Changing password for: <strong id="change-password-username"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" name="new_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" name="confirm_password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Search functionality
+    $("#searchCustomer").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("table tbody tr").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+    });
+
+    // Toggle customer status
+    $('.toggle-status').click(function() {
+        if (!confirm('Are you sure you want to change this customer\'s status?')) {
+            return;
+        }
+        
+        var button = $(this);
+        var customerId = button.data('id');
+        var currentStatus = button.data('status');
+
+        $.ajax({
+            url: '/admin-customers/toggle-status/',
+            type: 'POST',
+            data: {
+                'customer_id': customerId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Update button appearance without page reload
+                    button.removeClass('btn-success btn-danger');
+                    button.find('i').removeClass('fa-check-circle fa-times-circle');
+                    if (currentStatus === 'True') {
+                        button.addClass('btn-danger')
+                            .attr('title', 'Click to activate')
+                            .html('<i class="fas fa-times-circle"></i> Inactive');
+                        button.data('status', 'False');
+                    } else {
+                        button.addClass('btn-success')
+                            .attr('title', 'Click to deactivate')
+                            .html('<i class="fas fa-check-circle"></i> Active');
+                        button.data('status', 'True');
+                    }
+                }
+            }
+        });
+    });
+
+    // View customer details
+    $('.view-customer').click(function() {
+        var customerId = $(this).data('id');
+        
+        $.ajax({
+            url: `/admin-customers/${customerId}/details/`,
+            type: 'GET',
+            success: function(response) {
+                $('#customerInfo').html(response.customerHtml);
+                $('#orderHistory').html(response.orderHtml);
+            }
+        });
+    });
+
+    // Edit customer
+    $('.edit-customer').click(function() {
+        var button = $(this);
+        $('#edit-customer-id').val(button.data('id'));
+        $('#edit-username').val(button.data('username'));
+        $('#edit-email').val(button.data('email')); 
+        $('#edit-phone').val(button.data('phone'));
+        $('#edit-address').val(button.data('address'));
+        $('#edit-role').val(button.data('role'));
+        $('#edit-status').prop('checked', button.data('status') === 'True');
+    });
+
+    // Change Password
+    $('.change-password').click(function() {
+        var button = $(this);
+        $('#change-password-id').val(button.data('id'));
+        $('#change-password-username').text(button.data('username'));
+        $('#changePasswordForm')[0].reset();
+    });
+
+    $('#changePasswordForm').on('submit', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var newPassword = form.find('input[name="new_password"]').val();
+        var confirmPassword = form.find('input[name="confirm_password"]').val();
+
+        if (newPassword !== confirmPassword) {
+            alert('Passwords do not match!');
+            return;
+        }
+
+        $.ajax({
+            url: '/admin-customers/change-password/',
+            type: 'POST',
+            data: {
+                'customer_id': $('#change-password-id').val(),
+                'new_password': newPassword,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert('Password changed successfully!');
+                    $('#changePasswordModal').modal('hide');
+                    form[0].reset();
+                } else {
+                    alert(response.error || 'Error changing password');
+                }
+            },
+            error: function(xhr) {
+                alert(xhr.responseJSON?.error || 'Error changing password');
+            }
+        });
+    });
+
+    // Reset Password
+    $('.reset-password').click(function() {
+        if (!confirm('Are you sure you want to reset the password?')) {
+            return;
+        }
+
+        var button = $(this);
+        var customerId = button.data('id');
+        var username = button.data('username');
+
+        $.ajax({
+            url: '/admin-customers/reset-password/',
+            type: 'POST',
+            data: {
+                'customer_id': customerId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert(`Password for ${username} has been reset to: ${response.new_password}`);
+                } else {
+                    alert(response.error || 'Error resetting password');
+                }
+            },
+            error: function(xhr) {
+                alert(xhr.responseJSON?.error || 'Error resetting password');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

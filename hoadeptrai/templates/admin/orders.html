@@ -1,0 +1,165 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Orders Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Orders Management</h1>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Order List</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>#{{ order.id }}</td>
+                            <td>{{ order.customer.username }}</td>
+                            <td>{{ order.total_amount }}đ</td>
+                            <td>
+                                <span class="badge {% if order.status == 'pending' %}bg-warning
+                                                 {% elif order.status == 'processing' %}bg-info
+                                                 {% elif order.status == 'shipped' %}bg-primary
+                                                 {% elif order.status == 'delivered' %}bg-success
+                                                 {% else %}bg-danger{% endif %}">
+                                    {{ order.status }}
+                                </span>
+                            </td>
+                            <td>{{ order.order_date|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-info view-order" data-bs-toggle="modal" data-bs-target="#orderDetailModal" data-order-id="{{ order.id }}">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Order Detail Modal -->
+{% include 'admin/partials/order_detail_modal.html' %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('.view-order').click(function() {
+        var orderId = $(this).data('order-id');
+        
+        $.get(`/admin-orders/detail/${orderId}/`, function(data) {
+            // Update order info
+            $('#orderIdTitle').text(data.order_id);
+            $('#orderNumber').text('#' + data.order_id);
+            $('#orderDate').text(data.date);
+            $('#orderStatus')
+                .text(data.status)
+                .removeClass()
+                .addClass('badge ' + getStatusClass(data.status));
+            $('#paymentMethod').text(data.payment_method || 'Không xác định');
+            
+            // Update customer info
+            $('#customerName').text(data.customer.name);
+            $('#customerEmail').text(data.customer.email);
+            $('#customerPhone').text(data.customer.phone || 'Chưa cập nhật');
+            $('#shippingAddress').text(data.shipping_address);
+            
+            // Update items table
+            var tbody = $('#orderItemsTable tbody');
+            tbody.empty();
+            data.items.forEach(function(item) {
+                tbody.append(`
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="${item.image || '/static/app/images/placeholder.png'}" 
+                                     alt="${item.product}" 
+                                     class="me-2 rounded"
+                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                <div>
+                                    <div class="fw-bold">${item.product}</div>
+                                    <small class="text-muted">${item.category || ''}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">${item.quantity}</td>
+                        <td class="text-end">${item.price.toLocaleString()}đ</td>
+                        <td class="text-end">${item.total.toLocaleString()}đ</td>
+                    </tr>
+                `);
+            });
+            
+            // Update totals and discount
+            $('#subtotal').text(data.subtotal.toLocaleString() + 'đ');
+            
+            if (data.promotion.code) {
+                $('#discountRow').show();
+                let discountText = data.promotion.discount_type === 'Percent' 
+                    ? `${data.promotion.discount_value}%`
+                    : data.promotion.discount_value.toLocaleString() + 'đ';
+                $('#promotionCode').text(`(Mã: ${data.promotion.code} - ${discountText})`);
+                $('#discountAmount').text('-' + data.discount.toLocaleString() + 'đ');
+            } else {
+                $('#discountRow').hide();
+            }
+            
+            $('#orderTotal').text(data.total.toLocaleString() + 'đ');
+            
+            // Update status dropdown value
+            $('select[name="status"]').val(data.status);
+            $('#updateOrderId').val(data.order_id);
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            console.error('Error fetching order details:', errorThrown);
+            alert('Error loading order details. Please try again.');
+        });
+    });
+
+    // Handle form submission
+    $('#orderDetailModal form').on('submit', function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: '/admin-orders/',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                // Reload the page to show updated status
+                location.reload();
+            },
+            error: function(xhr) {
+                alert('Error updating order status. Please try again.');
+            }
+        });
+    });
+
+    function getStatusClass(status) {
+        switch(status) {
+            case 'pending': return 'bg-warning';
+            case 'processing': return 'bg-info';
+            case 'shipped': return 'bg-primary';
+            case 'delivered': return 'bg-success';
+            case 'cancelled': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}
