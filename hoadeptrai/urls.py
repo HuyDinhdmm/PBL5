@@ -41,4 +41,6 @@ urlpatterns = [
     path('payment/zalopay-callback/', views.zalopay_callback, name='zalopay_callback'),
     path('payment/zalopay-return/', views.zalopay_return, name='zalopay_return'),
     path('apply-promotion/', views.apply_promotion, name='apply_promotion'),
+    path('bot-chat/', views.bot_chat, name='bot_chat'),
+    path('bot-chat/ask/', views.bot_chat, name='bot_chat_ask'),
 ]

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
-from .models import Customer, Product, Order, OrderItem, Category, Message, Promotion  # Add Promotion to imports
+from .models import Customer, Product, Order, OrderItem, Category, Message, Promotion, BotMessage  # Add Promotion and BotMessage to imports
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
@@ -23,6 +23,19 @@ import requests
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from pathlib import Path
+import openai
+
+# Import safely with error handling
+try:
+    from langchain_community.document_loaders import PyMuPDFLoader
+    from langchain_community.vectorstores import Chroma
+    from langchain_huggingface import HuggingFaceEmbeddings
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    CHATBOT_ENABLED = True
+except ImportError:
+    CHATBOT_ENABLED = False
+    logger.warning("Chatbot dependencies not installed. Chatbot features will be disabled.")
 
 logger = logging.getLogger(__name__)
 
@@ -1098,3 +1111,70 @@ def admin_promotion_delete(request, promotion_id):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+def bot_chat(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+        
+    if request.method == 'POST':
+        try:
+            question = request.POST.get('question').lower()
+            
+            # Load responses from file
+            responses = {}
+            current_section = ''
+            response_file = Path(__file__).parent / 'static/bot/responses.txt'
+            
+            with open(response_file, 'r', encoding='utf-8') as f:
+                content = ''
+                for line in f:
+                    if line.strip():
+                        if line.startswith('[') and line.endswith(']\n'):
+                            if current_section and content:
+                                responses[current_section] = content.strip()
+                            current_section = line.strip()[1:-1]
+                            content = ''
+                        else:
+                            content += line
+                if current_section and content:
+                    responses[current_section] = content.strip()
+
+            # Determine appropriate response
+            answer = None
+            if any(greeting in question for greeting in ['xin chào', 'hello', 'hi', 'chào']):
+                answer = responses.get('greeting')
+            elif 'đồ uống' in question:
+                answer = responses.get('menu_drink')
+            elif any(word in question for word in ['tráng miệng', 'dessert', 'bánh', 'kem']):
+                answer = responses.get('menu_dessert')
+            elif any(word in question for word in ['menu', 'món']):
+                answer = responses.get('menu_main')
+            elif 'combo' in question:
+                answer = responses.get('combo')
+            elif any(word in question for word in ['ship', 'giao', 'freeship']):
+                answer = responses.get('delivery')
+            elif any(word in question for word in ['giờ', 'thời gian']):
+                answer = responses.get('time')
+            
+            if not answer:
+                answer = responses.get('unknown')
+
+            # Save conversation
+            BotMessage.objects.create(
+                user=request.user,
+                question=question,
+                answer=answer
+            )
+            
+            return JsonResponse({'reply': answer})
+            
+        except Exception as e:
+            logger.error(f"Bot chat error: {str(e)}")
+            return JsonResponse({
+                'error': 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau hoặc gọi 1900 xxxx.'
+            }, status=500)
+            
+    recent_msgs = BotMessage.objects.filter(user=request.user)[:10]
+    return render(request, 'app/bot_chat.html', {
+        'recent_messages': recent_msgs
+    })

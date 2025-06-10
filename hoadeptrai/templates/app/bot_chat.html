@@ -1,0 +1,186 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block main_content %}
+<div class="container my-5" style="margin-bottom: 100px !important;">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm rounded-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0"><i class="fas fa-robot me-2"></i>Chat với Bot</h5>
+                </div>
+                <div class="card-body">
+                    <div id="chatMessages" style="height: 400px; overflow-y: auto;" class="mb-3 p-3">
+                        <div class="text-center text-muted mb-4">
+                            <i class="fas fa-robot fa-3x mb-3"></i>
+                            <p>Xin chào! Tôi là bot trợ giúp. Bạn có thể hỏi tôi về menu, sản phẩm và dịch vụ.</p>
+                        </div>
+                        {% for msg in recent_messages %}
+                        <div class="message {% if msg.question %}sent{% else %}received{% endif %} mb-3">
+                            <div class="message-bubble">
+                                {% if msg.question %}
+                                <p class="mb-0">{{ msg.question }}</p>
+                                {% else %}
+                                <p class="mb-0">{{ msg.answer }}</p>
+                                {% endif %}
+                            </div>
+                            <small class="message-time text-muted">
+                                {{ msg.created_at|date:"H:i, d/m/Y" }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <form id="chatForm" class="mt-3">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="text" id="messageInput" class="form-control" 
+                                   placeholder="Nhập câu hỏi của bạn..." required>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-paper-plane me-2"></i>Gửi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.message {
+    margin-bottom: 1.5rem;
+    max-width: 75%;
+    clear: both;
+}
+
+.message.sent {
+    margin-left: auto;
+    margin-right: 1rem;
+}
+
+.message.received {
+    margin-right: auto;
+    margin-left: 1rem;
+}
+
+.message-bubble {
+    padding: 1rem 1.2rem;
+    border-radius: 1.2rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    word-wrap: break-word;
+}
+
+.message.sent .message-bubble {
+    background-color: #0d6efd;
+    color: white;
+    border-bottom-right-radius: 0.3rem;
+}
+
+.message.received .message-bubble {
+    background-color: #f0f0f0;
+    border-bottom-left-radius: 0.3rem;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    opacity: 0.8;
+}
+
+#chatMessages {
+    padding: 1.5rem !important;
+    background-color: #f8f9fa;
+}
+
+#chatForm {
+    background-color: white;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    padding: 1rem;
+}
+
+.input-group {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    const chatMessages = $('#chatMessages');
+    const chatForm = $('#chatForm');
+    const messageInput = $('#messageInput');
+
+    // Scroll to bottom initially
+    chatMessages.scrollTop(chatMessages[0].scrollHeight);
+
+    chatForm.on('submit', function(e) {
+        e.preventDefault();
+        const message = messageInput.val().trim();
+        if (!message) return;
+
+        // Add user message
+        appendMessage(message, true);
+        messageInput.val('').prop('disabled', true);
+
+        // Add loading indicator
+        const loadingDiv = $('<div class="message received mb-3"><div class="message-bubble"><div class="loading"></div></div></div>');
+        chatMessages.append(loadingDiv);
+        scrollToBottom();
+
+        // Send to server
+        $.ajax({
+            url: '{% url "bot_chat" %}',
+            type: 'POST',
+            data: {
+                question: message,
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                loadingDiv.remove();
+                appendMessage(response.reply, false);
+                messageInput.prop('disabled', false).focus();
+            },
+            error: function(xhr) {
+                loadingDiv.remove();
+                appendMessage('Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.', false);
+                messageInput.prop('disabled', false);
+            }
+        });
+    });
+
+    function appendMessage(text, isSent) {
+        const messageHtml = `
+            <div class="message ${isSent ? 'sent' : 'received'} mb-3">
+                <div class="message-bubble">
+                    <p class="mb-0">${text}</p>
+                </div>
+                <small class="message-time text-muted">
+                    ${new Date().toLocaleTimeString()}, ${new Date().toLocaleDateString()}
+                </small>
+            </div>
+        `;
+        chatMessages.append(messageHtml);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        chatMessages.scrollTop(chatMessages[0].scrollHeight);
+    }
+});
+</script>
+{% endblock %}
